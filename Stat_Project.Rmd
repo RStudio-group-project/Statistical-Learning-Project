@@ -30,8 +30,14 @@ plot(pressure)
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
 ```{r}
+# 
 library(ggplot2)
 library(tidyverse)
 ```
 
 
+```{r}
+# Load the dataset
+hotel_bookings <- read.csv("hotel_bookings.csv", na.strings="NULL")
+View(hotel_bookings)
+```
