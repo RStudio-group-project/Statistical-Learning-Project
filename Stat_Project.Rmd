@@ -2,7 +2,11 @@
 title: "Stat_Project"
 author: "I.Caria, C.De Luca, M.Pernini"
 date: "5/24/2022"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -29,8 +33,9 @@ plot(pressure)
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
-```{r}
-# 
+```{r message=FALSE, warning=FALSE}
+# Libraries
+
 library(ggplot2)
 library(tidyverse)
 ```
@@ -38,6 +43,65 @@ library(tidyverse)
 
 ```{r}
 # Load the dataset
+
 hotel_bookings <- read.csv("hotel_bookings.csv", na.strings="NULL")
 View(hotel_bookings)
 ```
+
+
+```{r}
+# First look to the dataset
+
+str(hotel_bookings) # check the data type of each column
+
+```
+
+
+
+```{r}
+# Convert character columns into factors
+
+hotel_bookings_new <- as.data.frame(unclass(hotel_bookings),
+                       stringsAsFactors = TRUE)
+```
+
+
+```{r}
+# Convert binary column "is_canceled" into factor
+
+hotel_bookings_new$is_canceled <- as.factor(hotel_bookings_new$is_canceled)
+
+levels(hotel_bookings_new$is_canceled) <- c("not_canceled", "canceled")
+```
+
+```{r}
+# Convert column "arrival_date_year" into factor
+
+hotel_bookings_new$arrival_date_year <- as.factor(hotel_bookings_new$arrival_date_year)
+
+levels(hotel_bookings_new$is_canceled) <- c("2015", "2016", "2017")
+```
+
+```{r}
+# Convert column "children" into numeric
+
+hotel_bookings_new$children <- as.numeric(as.character(hotel_bookings_new$children))
+```
+
+
+```{r}
+# Type of each column
+
+str(hotel_bookings_new)
+
+# Summary
+
+summary(hotel_bookings_new)
+```
+
+
+
+```{r}
+
+```
+
