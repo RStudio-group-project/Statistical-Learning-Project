@@ -54,6 +54,8 @@ View(hotel_bookings)
 
 str(hotel_bookings) # check the data type of each column
 
+summary(hotel_bookings)
+
 ```
 
 
@@ -67,11 +69,18 @@ hotel_bookings_new <- as.data.frame(unclass(hotel_bookings),
 
 
 ```{r}
-# Convert binary column "is_canceled" into factor
+# Convert binary columns "is_canceled" and "is_repeated_guest" into factor
 
 hotel_bookings_new$is_canceled <- as.factor(hotel_bookings_new$is_canceled)
 
 levels(hotel_bookings_new$is_canceled) <- c(0, 1)
+
+
+
+hotel_bookings_new$is_repeated_guest <- as.factor(hotel_bookings_new$is_repeated_guest)
+
+levels(hotel_bookings_new$is_repeated_guest) <- c(0, 1)
+
 ```
 
 ```{r}
@@ -115,7 +124,8 @@ for (i in 1:n_children) {
 
 # Remove columns "agent" and "company"
 
-
-
+index_agent <- which(colnames(hotel_bookings_new)=="agent")
+index_company <- which(colnames(hotel_bookings_new)=="company")
+hotel_bookings_new = hotel_bookings_new[-c(index_agent, index_company)]
 ```
 
