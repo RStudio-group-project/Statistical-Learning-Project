@@ -3,9 +3,10 @@ title: "Stat_Project"
 author: "I.Caria, C.De Luca, M.Pernini"
 date: "5/24/2022"
 output:
+  word_document: default
   html_document: default
   pdf_document: default
-editor_options: 
+editor_options:
   chunk_output_type: console
 ---
 
@@ -38,6 +39,7 @@ Note that the `echo = FALSE` parameter was added to the code chunk to prevent pr
 
 library(ggplot2)
 library(tidyverse)
+library(plotly)
 ```
 
 
@@ -65,6 +67,7 @@ summary(hotel_bookings)
 
 hotel_bookings_new <- as.data.frame(unclass(hotel_bookings),
                        stringsAsFactors = TRUE)
+attach(hotel_bookings_new)
 ```
 
 
@@ -127,5 +130,66 @@ for (i in 1:n_children) {
 index_agent <- which(colnames(hotel_bookings_new)=="agent")
 index_company <- which(colnames(hotel_bookings_new)=="company")
 hotel_bookings_new = hotel_bookings_new[-c(index_agent, index_company)]
+
+view(hotel_bookings_new)
+summary(hotel_bookings_new)
+```
+
+
+
+```{r}
+# Count vs Month
+
+ggplot(hotel_bookings,aes(factor(arrival_date_month,levels=month.name))) +
+  geom_bar(col ="black",fill="#993333",alpha=0.5) +
+  theme(axis.text.x = element_text(face="bold", size=8, angle=30)) +
+  scale_y_continuous("Count",limits = c(0,15000),breaks=seq(0,15000,by=1500)) +
+  scale_x_discrete("Month")
+
+
+
+```
+
+
+
+```{r}
+# City vs resort hotel
+
+ggplot(hotel_bookings_new, aes(arrival_date_month, fill=hotel, colour=hotel))+ 
+  geom_bar(position = "dodge")+
+  theme(axis.text.x = element_text(face="bold", size=8, angle=30)) +
+  scale_y_continuous("Count",limits = c(0,15000),breaks=seq(0,15000,by=1500)) +
+  scale_x_discrete("Month")
+```
+
+
+
+```{r}
+
+# Country plot
+
+df <- as.data.frame(hotel_bookings_new[hotel_bookings_new$is_canceled==0, c("country")])
+
+df <- as.data.frame(lapply(df, function(x) as.data.frame(table(x))))
+
+colnames(df) <- c('country', 'frequency')
+
+fig <- plot_ly(df, type='choropleth', locations=df$country, z=df$frequency, colorscale = 'Viridis' )
+
+fig
+
+# scala logaritmica
+fig2 <- plot_ly(df, type='choropleth', locations=df$country, z=log(df$frequency+1), colorscale = 'Viridis' )
+
+fig2
+
+```
+
+
+```{r}
+# Regressione su is_canceled
+
+reg.out <- glm(is_canceled~lead_time+stays_in_week_nights+adults+meal, family='binomial')
+summary(reg.out)
 ```
 
