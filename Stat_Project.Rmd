@@ -192,4 +192,39 @@ fig2
 reg.out <- glm(is_canceled~lead_time+stays_in_week_nights+adults+meal, family='binomial')
 summary(reg.out)
 ```
+#Aggiunta variabile total_stays
+hotel_bookings_new=hotel_bookings_new%>%
+  mutate(total_stays=(stays_in_week_nights + stays_in_weekend_nights) )
 
+#Regressione completa
+mod_2 <- glm(is_canceled~lead_time+arrival_date_month+total_stays+adults+children+babies+meal+market_segment+distribution_channel+is_repeated_guest+adr+previous_cancellations+previous_bookings_not_canceled+booking_changes+deposit_type+days_in_waiting_list+customer_type+required_car_parking_spaces+total_of_special_requests,  family="binomial")
+summary(mod_2)
+
+#Selezione del modello
+regfit.full=regsubsets(is_canceled~lead_time+total_stays+adults+children+
+                       babies+meal+market_segment+distribution_channel+is_repeated_guest+adr+previous_cancellations+
+                         previous_bookings_not_canceled+booking_changes+deposit_type+days_in_waiting_list+customer_type+
+                         required_car_parking_spaces+total_of_special_requests, data = hotel_bookings_new, nvmax = 46)
+reg.summary=summary(regfit.full)
+names(reg.summary)
+
+
+par(mfrow=c(2,2))
+plot(reg.summary$rss,xlab="n. di predittori",ylab="RSS",type="b",pch=16,cex=.5)
+rp=which.min(reg.summary$rss)
+points(rp,reg.summary$rss[rp],pch=20,col="red")
+
+plot(reg.summary$adjr2,xlab="n. di predittori",ylab="Adjusted R^2",type="b",pch=16,cex=.5)
+rp=which.max(reg.summary$adjr2)
+points(rp,reg.summary$adjr2[rp],pch=20,col="red")
+
+plot(reg.summary$cp,xlab="n. di predittori",ylab="Mallow C_p",type="b",pch=16,cex=.5)
+rp=which.min(reg.summary$cp)
+points(rp,reg.summary$cp[rp],pch=20,col="red")
+
+plot(reg.summary$bic,xlab="n. di predittori",ylab="BIC",type="b",pch=16,cex=.5)
+rp=which.min(reg.summary$bic)
+points(rp,reg.summary$bic[rp],pch=20,col="red")
+
+par(mfrow=c(1,1))
+plot(regfit.full,scale="r2")
