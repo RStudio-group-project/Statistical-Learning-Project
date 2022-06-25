@@ -163,60 +163,6 @@ ggplot(hotel_bookings_new, aes(arrival_date_month, fill=hotel, colour=hotel))+
 ```
 
 
-```{r}
-# Total number of booking for each hotel plot
-
-df_hotel <- as.data.frame(hotel_bookings_new[hotel_bookings_new$is_canceled==0, c("hotel")])
-df_hotel <- as.data.frame(lapply(df_hotel, function(x) as.data.frame(table(x))))
-
-colnames(df_hotel) <- c("hotel", "frequency")
-
-df_hotel
-
-fig_hotel <- df_hotel %>% plot_ly(labels = ~hotel, values = ~frequency)
-fig_hotel <- fig_hotel %>% add_pie(hole = 0.6)
-fig_hotel <- fig_hotel %>% layout(title = "Total number of booking for each hotel",  showlegend = T,
-                      xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
-                      yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
-
-fig_hotel
-
-```
-
-```{r}
-# Total guests for each hotel by month of arrival date
-
-df_months_City <- as.data.frame(hotel_bookings_new[hotel_bookings_new$is_canceled==0 & hotel_bookings_new$hotel=='City Hotel', c( "arrival_date_month")])
-
-df_months_Resort <- as.data.frame(hotel_bookings_new[hotel_bookings_new$is_canceled==0 & hotel_bookings_new$hotel=='Resort Hotel', c( "arrival_date_month")])
-
-df_months_City <- as.data.frame(lapply(df_months_City, function(x) as.data.frame(table(x))))
-
-df_months_Resort <- as.data.frame(lapply(df_months_Resort, function(x) as.data.frame(table(x))))
-
-colnames(df_months_City) <- c("arrival_date_month_City", "frequency_City" )
-
-colnames(df_months_Resort) <- c("arrival_date_month_Resort", "frequency_Resort")
-
-df_months_City$arrival_date_month_City <- factor(df_months_City$arrival_date_month_City, levels = c("January", "February", "March","April", "May", "June", "July", "August", "September", "October", "November", "December"))
-
-df_months_Resort$arrival_date_month_Resort <- factor(df_months_Resort$arrival_date_month_Resort, levels = c("January", "February", "March","April", "May", "June", "July", "August", "September", "October", "November", "December"))
-
-
-fig_months <- plot_ly()
-
-fig_months <- fig_months %>% add_lines(data=df_months_City, x = ~arrival_date_month_City, y = ~frequency_City, name = 'City Hotel', type = 'scatter', mode = 'lines', line = list(color = 'rgb(205, 12, 24)', width = 4))
-
-fig_months <- fig_months %>% add_lines(data=df_months_Resort, x = ~arrival_date_month_Resort, y = ~frequency_Resort, name = 'Resort Hotel', type = 'scatter', mode = 'lines', line = list(color = 'rgb(22, 96, 167)', width = 4)) 
-
-fig_months <- fig_months %>% layout(title = "Total guests for each hotel by month of arrival date",
-         xaxis = list(title = "Months"),
-         yaxis = list (title = "Total guests"))
-
-fig_months
-
-```
-
 
 ```{r}
 
@@ -238,23 +184,51 @@ fig2 <- plot_ly(df, type='choropleth', locations=df$country, z=log(df$frequency+
 fig2
 
 ```
+#Correlazione
+
+##convert all factors to numeric
+tt <- hotel_bookings %>% mutate_if(is.factor, as.numeric)
+
+##calculate correlation coefficient between target variable and the other variables
+cor_is_canceled <-  data.frame ( sapply(tt, cor, y=tt$is_canceled))
+
+##raname table
+colnames(cor_is_canceled) <- "corr_coeff"
+
+## select only those with corr_coeff < -0.15 | corr_coeff > 0.15
+cor_is_canceled <- cor_is_canceled %>%  rownames_to_column(., var = "feature") %>% 
+  filter(corr_coeff < -0.15 | corr_coeff > 0.15) %>%
+  arrange(desc(corr_coeff))
 
 
-```{r}
+## subset the tibble with only features that are strongly correlated to the target feature
+tt <- tt %>%select(cor_is_canceled$feature)
+
+## print the table
+cor_is_canceled  %>% knitr::kable()
+
+cor(tt) %>% ggcorrplot(., hc.order = FALSE, type = "lower", 
+                       lab = TRUE)
+
+
 # Regressione su is_canceled
 
 reg.out <- glm(is_canceled~lead_time+stays_in_week_nights+adults+meal, family='binomial')
 summary(reg.out)
-```
-#Aggiunta variabile total_stays
+
+# Aggiunta variabile total_stays
 hotel_bookings_new=hotel_bookings_new%>%
   mutate(total_stays=(stays_in_week_nights + stays_in_weekend_nights) )
 
-#Regressione completa
-mod_2 <- glm(is_canceled~lead_time+arrival_date_month+total_stays+adults+children+babies+meal+market_segment+distribution_channel+is_repeated_guest+adr+previous_cancellations+previous_bookings_not_canceled+booking_changes+deposit_type+days_in_waiting_list+customer_type+required_car_parking_spaces+total_of_special_requests,  family="binomial")
-summary(mod_2)
+# Regressione completa
+model <- glm(is_canceled~lead_time+reservation_status_date+arrival_date_month+total_stays+adults+children+babies+meal+distribution_channel+is_repeated_guest+adr+previous_cancellations+previous_bookings_not_canceled+booking_changes+deposit_type+days_in_waiting_list+customer_type+required_car_parking_spaces+total_of_special_requests,  family="binomial")
+summary(model)
 
-#Selezione del modello
+# Collinearity
+
+VIF(model)
+
+# Selezione del modello
 regfit.full=regsubsets(is_canceled~lead_time+total_stays+adults+children+
                        babies+meal+market_segment+distribution_channel+is_repeated_guest+adr+previous_cancellations+
                          previous_bookings_not_canceled+booking_changes+deposit_type+days_in_waiting_list+customer_type+
@@ -280,5 +254,96 @@ plot(reg.summary$bic,xlab="n. di predittori",ylab="BIC",type="b",pch=16,cex=.5)
 rp=which.min(reg.summary$bic)
 points(rp,reg.summary$bic[rp],pch=20,col="red")
 
+par(mfrow=c(1,2))
+plot(regfit.full,scale="r2",)
+plot(regfit.full,scale="adjr2")
+plot(regfit.full,scale="Cp")
+plot(regfit.full,scale="bic")
+
+# CV
+
+set.seed(17)
+cv.error.10 <- rep(0,10)
+for (i in 1:10){
+  glm.fit <- glm(is_canceled~lead_time+reservation_status_date+arrival_date_month+total_stays+adults+children+babies+meal+distribution_channel+is_repeated_guest+adr+previous_cancellations+previous_bookings_not_canceled+booking_changes+deposit_type+days_in_waiting_list+customer_type+required_car_parking_spaces+total_of_special_requests,  family="binomial",data=hotel_bookings_new)
+  cv.error.10[i] <- cv.glm(hotel_bookings_new,glm.fit,K=15)$delta[1]
+}
+#cv.error.10
+
 par(mfrow=c(1,1))
-plot(regfit.full,scale="r2")
+plot(cv.error.10, type="b",xlab="degree", ylab="K-fold CV error")
+
+# LASSO
+library(caret)
+set.seed(123)
+training.samples <- hotel_bookings_new$is_canceled %>% 
+  createDataPartition(p = 0.8, list = FALSE)
+train.data  <- hotel_bookings_new[training.samples, ]
+test.data <- hotel_bookings_new[-training.samples, ]
+
+## Dumy code categorical predictor variables
+x <- model.matrix(is_canceled~lead_time+reservation_status_date+arrival_date_month+total_stays+adults+children+babies+meal+distribution_channel+is_repeated_guest+adr+previous_cancellations+previous_bookings_not_canceled+booking_changes+deposit_type+days_in_waiting_list+customer_type+required_car_parking_spaces+total_of_special_requests, train.data)[,-1]
+## Convert the outcome (class) to a numerical variable
+y <- train.data$is_canceled
+lambdas <- 10^seq(2, -3, by = -.1)
+glmnet(x, y, family = "binomial", alpha = 0, lambda = NULL)
+
+## Find the best lambda using cross-validation
+set.seed(123) 
+cv.lasso <- cv.glmnet(x, y, alpha = 1, family = "binomial")
+## Fit the final model on the training data
+model_lasso <- glmnet(x, y, alpha = 1, family = "binomial",
+                lambda = cv.lasso$lambda.min)
+## Display regression coefficients
+coef(model_lasso)
+## Make predictions on the test data
+x.test <- model.matrix(is_canceled~lead_time+reservation_status_date+arrival_date_month+total_stays+adults+children+babies+meal+distribution_channel+is_repeated_guest+adr+previous_cancellations+previous_bookings_not_canceled+booking_changes+deposit_type+days_in_waiting_list+customer_type+required_car_parking_spaces+total_of_special_requests, test.data)[,-1]
+probabilities <- model %>% predict(newx = x.test)
+predicted.classes <- ifelse(probabilities > 0.5, "1", "0")
+## Model accuracy
+observed.classes <- test.data$is_canceled
+mean(predicted.classes == observed.classes)
+
+cv.lasso <- cv.glmnet(x, y, alpha = 1, family = "binomial")
+plot(cv.lasso)
+cv.lasso$lambda.min
+cv.lasso$lambda.1se
+coef(cv.lasso, cv.lasso$lambda.min)
+coef(cv.lasso, cv.lasso$lambda.1se)
+
+## Final model with lambda.min
+lasso.model <- glmnet(x, y, alpha = 1, family = "binomial",
+                      lambda = cv.lasso$lambda.min)
+## Make prediction on test data
+x.test <- model.matrix(is_canceled~lead_time+reservation_status_date+arrival_date_month+total_stays+adults+children+babies+meal+distribution_channel+is_repeated_guest+adr+previous_cancellations+previous_bookings_not_canceled+booking_changes+deposit_type+days_in_waiting_list+customer_type+required_car_parking_spaces+total_of_special_requests, test.data)[,-1]
+probabilities <- lasso.model %>% predict(newx = x.test)
+predicted.classes <- ifelse(probabilities > 0.5, "1", "0")
+## Model accuracy
+observed.classes <- test.data$is_canceled
+#mean(predicted.classes == observed.classes)
+
+## Fit the model
+full.model <- glm(is_canceled~lead_time+reservation_status_date+arrival_date_month+total_stays+adults+children+babies+meal+distribution_channel+is_repeated_guest+adr+previous_cancellations+previous_bookings_not_canceled+booking_changes+deposit_type+days_in_waiting_list+customer_type+required_car_parking_spaces+total_of_special_requests, data = train.data, family = binomial)
+## Make predictions
+probabilities <- full.model %>% predict(test.data, type = "response")
+predicted.classes <- ifelse(probabilities > 0.5, "1", "0")
+## Model accuracy
+observed.classes <- test.data$is_canceled
+mean(predicted.classes == observed.classes)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
