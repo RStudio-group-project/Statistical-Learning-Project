@@ -1,0 +1,400 @@
+---
+title: "Project_stat"
+author: "I.Caria, C.De Luca, M.Pernini"
+date: "13/06/2022"
+output:
+  pdf_document: default
+  html_document: default
+editor_options:
+  chunk_output_type: inline
+---
+
+## Libraries
+
+```{r message=FALSE, warning=FALSE}
+
+library(ggplot2)
+library(tidyverse)
+library(leaps)
+library(ggcorrplot)
+library(regclass)
+library(boot)
+#library(caret)
+library(MASS)
+library(knitr)
+library(corrplot)
+library(glmnet)
+library(plotly)
+
+```
+
+
+## Hotel booking demand dataset
+
+We decided to analyze the *Hotel booking demand dataset* that we load from Kaggle. This dataset contains information about two different kinds of hotel: City Hotel and Resort Hotel. Each observation represents an hotel booking. Both hotels are located in Portugal: the resort hotel at the resort region of Algarve and the city hotel at the city of Lisbon.
+
+
+```{r}
+# Load the dataset
+
+hotel_bookings <- read.csv("hotel_bookings.csv", na.strings="NULL")
+View(hotel_bookings)
+```
+
+
+# Dataset Pre-Processing
+
+The dataset contains 32 variables describing 119390 observations.
+
+```{r}
+# First look to the dataset
+
+glimpse(hotel_bookings)
+
+```
+
+As we can see from the code above, there are many character variables that we converted into factors. Furthermore, we noticed that some categorical variables like *children* were numeric, so we converted them.
+
+```{r warning=FALSE}
+# Convert character columns into factors
+
+hotel_bookings_new <- as.data.frame(unclass(hotel_bookings),
+                       stringsAsFactors = TRUE)
+
+# Convert binary columns "is_canceled" and "is_repeated_guest" into factor
+
+hotel_bookings_new$is_canceled <- as.factor(hotel_bookings_new$is_canceled)
+levels(hotel_bookings_new$is_canceled) <- c(0, 1)
+
+hotel_bookings_new$is_repeated_guest <- as.factor(hotel_bookings_new$is_repeated_guest)
+levels(hotel_bookings_new$is_repeated_guest) <- c(0, 1)
+
+# Convert column "arrival_date_year" into factor
+
+hotel_bookings_new$arrival_date_year <- as.factor(hotel_bookings_new$arrival_date_year)
+levels(hotel_bookings_new$arrival_date_year) <- c("2015", "2016", "2017")
+
+# Convert column "children" into numeric
+
+hotel_bookings_new$children <- as.numeric(as.character(hotel_bookings_new$children))
+
+# Convert column "reservation status date" into date
+
+hotel_bookings_new$reservation_status_date <- as.Date(
+  hotel_bookings_new$reservation_status_date, format = "%Y-%m-%d")
+```
+
+The dataset provides two different variables for the stay: *stays_in_weekend_nights* and *stays_in_week_nights*. We decided to add the sum of these two variables as a new variable *total_stays* for ease of analyses.
+
+```{r}
+# New column for total stays
+
+hotel_bookings_new=hotel_bookings_new%>%
+  mutate(total_stays=(stays_in_week_nights + stays_in_weekend_nights) )
+```
+
+### Missing values
+
+```{r}
+
+colSums(is.na(hotel_bookings_new))[colSums(is.na(hotel_bookings_new))>0]
+```
+
+Since there are only 4 Nan values for the variable *children*, we decided to replace them with the value 0.
+The variables *agent* and *company* have too many Nan values, therefore we removed them. We left untouched the variable *country* because we did not use it in our models.
+
+```{r}
+# Replacing missing values in children column from the corresponding babies column
+
+n_children <- length(hotel_bookings_new$children)
+for (i in 1:n_children) {
+  if (is.na(hotel_bookings_new$children[i]))
+    hotel_bookings_new$children[i] <- 0
+}
+
+# Remove columns "agent" and "company"
+
+index_agent <- which(colnames(hotel_bookings_new)=="agent")
+index_company <- which(colnames(hotel_bookings_new)=="company")
+hotel_bookings_new = hotel_bookings_new[-c(index_agent, index_company)]
+
+```
+
+At the end of the pre-processing, we obtained the following dataset:
+
+```{r echo=FALSE}
+# Summary
+
+summary(hotel_bookings_new)
+```
+
+# EDA
+
+As stated above,the dataset contains information about two different kinds of hotel: City Hotel and Resort Hotel. There are 79330 observation for the former and 40060 for the latter.
+
+
+```{r}
+# Hotel donut plot
+
+df_hotel <- as.data.frame(hotel_bookings_new[, c("hotel")])
+df_hotel <- as.data.frame(lapply(df_hotel, function(x) as.data.frame(table(x))))
+
+colnames(df_hotel) <- c("hotel", "frequency")
+
+df_hotel
+
+colors_donut <- c('rgb((119,51,68))','rgb((227,181,164))') 
+
+fig_hotel <- df_hotel %>% plot_ly(labels = ~hotel, values = ~frequency, 
+                                  marker = list(colors = colors_donut,
+                                  line = list(color = '#FFFFFF', width = 1)))
+fig_hotel <- fig_hotel %>% add_pie(hole = 0.6)
+fig_hotel <- fig_hotel %>% layout(title = "Total number of booking for each hotel",  
+                      showlegend = T,
+                      xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                      yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+fig_hotel
+
+```
+
+
+Both hotels are located in Portugal; this is the reason why most of the guests come from Portugal, as we can see from the map plot below:
+
+
+```{r}
+# Country plot
+
+df_country <- as.data.frame(hotel_bookings_new[hotel_bookings_new$is_canceled==0, c("country")])
+df_country <- as.data.frame(lapply(df_country, function(x) as.data.frame(table(x))))
+colnames(df_country) <- c('country', 'frequency')
+
+# we used log-scale to see better the different number of guests for each country
+fig_country <- plot_ly(df_country, type='choropleth', locations=df_country$country, 
+                       z=log(df_country$frequency+1), colorscale = 'Viridis' )
+fig_country <- fig_country %>% layout(title = "Country plot")
+fig_country
+```
+
+Total bookings considering both canceled and not canceled
+Total guests considering only is_canceled==0
+
+
+```{r}
+# Total bookings for each hotel by month of arrival date
+
+df_months_City <- as.data.frame(hotel_bookings_new[hotel_bookings_new$hotel=='City Hotel', 
+                                                   c( "arrival_date_month")])
+
+df_months_Resort <- as.data.frame(hotel_bookings_new[hotel_bookings_new$hotel=='Resort Hotel', 
+                                                     c( "arrival_date_month")])
+
+df_months_City <- as.data.frame(lapply(df_months_City, function(x) as.data.frame(table(x))))
+
+df_months_Resort <- as.data.frame(lapply(df_months_Resort, function(x) as.data.frame(table(x))))
+
+colnames(df_months_City) <- c("arrival_date_month_City", "frequency_City" )
+
+colnames(df_months_Resort) <- c("arrival_date_month_Resort", "frequency_Resort")
+
+df_months_City$arrival_date_month_City <- factor(df_months_City$arrival_date_month_City, 
+          levels = c("January", "February", "March","April", "May", "June", "July", 
+                     "August", "September", "October", "November", "December"))
+
+df_months_Resort$arrival_date_month_Resort <- factor(df_months_Resort$arrival_date_month_Resort, 
+          levels = c("January", "February", "March","April", "May", "June", "July", 
+                     "August", "September", "October", "November", "December"))
+
+
+fig_months <- plot_ly()
+
+fig_months <- fig_months %>% add_lines(data=df_months_City, 
+                                       x = ~arrival_date_month_City, y = ~frequency_City, 
+                                       name = 'City Hotel', type = 'scatter', mode = 'lines', 
+                                       line = list(color = 'rgb(205, 12, 24)', width = 4))
+
+fig_months <- fig_months %>% add_lines(data=df_months_Resort, x = ~arrival_date_month_Resort, 
+                                       y = ~frequency_Resort, name = 'Resort Hotel', 
+                                       type = 'scatter', mode = 'lines', 
+                                       line = list(color = 'rgb(22, 96, 167)', width = 4)) 
+
+fig_months <- fig_months %>% 
+layout(title = "Total bookings for each hotel by month of arrival date",
+         xaxis = list(title = "Months"),
+         yaxis = list (title = "Total bookings"))
+
+fig_months
+```
+
+For each year 
+
+
+```{r}
+# Total bookings for each hotel by month (year: 2015)
+
+df_months_City_2015 <- as.data.frame(hotel_bookings_new[hotel_bookings_new$hotel=='City Hotel' 
+              & hotel_bookings_new$arrival_date_year==2015, c( "arrival_date_month")])
+
+df_months_Resort_2015 <- as.data.frame(hotel_bookings_new[hotel_bookings_new$hotel=='Resort Hotel'
+              & hotel_bookings_new$arrival_date_year==2015, c( "arrival_date_month")])
+
+df_months_City_2015 <- as.data.frame(lapply(df_months_City_2015, function(x) 
+  as.data.frame(table(x))))
+
+df_months_Resort_2015 <- as.data.frame(lapply(df_months_Resort_2015, function(x) 
+  as.data.frame(table(x))))
+
+colnames(df_months_City_2015) <- c("arrival_date_month_City", "frequency_City" )
+
+colnames(df_months_Resort_2015) <- c("arrival_date_month_Resort", "frequency_Resort")
+
+df_months_City_2015$arrival_date_month_City <- factor(df_months_City_2015$arrival_date_month_City, 
+            levels = c("January", "February", "March","April", "May", "June", "July", 
+                       "August", "September", "October", "November", "December"))
+
+df_months_Resort_2015$arrival_date_month_Resort <- factor(df_months_Resort_2015$arrival_date_month_Resort, levels = c("January", "February", "March","April", "May", "June", "July", "August", "September", "October", "November", "December"))
+
+
+fig_months_2015 <- plot_ly()
+
+fig_months_2015 <- fig_months_2015 %>% add_lines(data=df_months_City_2015, x = ~arrival_date_month_City, y = ~frequency_City, name = 'City Hotel', type = 'scatter', mode = 'lines', line = list(color = 'rgb(205, 12, 24)', width = 4))
+
+fig_months_2015 <- fig_months_2015 %>% add_lines(data=df_months_Resort_2015, x = ~arrival_date_month_Resort, y = ~frequency_Resort, name = 'Resort Hotel', type = 'scatter', mode = 'lines', line = list(color = 'rgb(22, 96, 167)', width = 4)) 
+
+fig_months_2015 <- fig_months_2015 %>% layout(title = "2015 - Total bookings for each hotel by month of arrival date",
+         xaxis = list(title = "Months",tickangle = -45),
+         yaxis = list (title = "Total bookings"))
+
+
+
+
+# Total bookings for each hotel by month (year: 2016)
+
+df_months_City_2016 <- as.data.frame(hotel_bookings_new[hotel_bookings_new$hotel=='City Hotel' & hotel_bookings_new$arrival_date_year==2016, c( "arrival_date_month")])
+
+df_months_Resort_2016 <- as.data.frame(hotel_bookings_new[hotel_bookings_new$hotel=='Resort Hotel'& hotel_bookings_new$arrival_date_year==2016, c( "arrival_date_month")])
+
+df_months_City_2016 <- as.data.frame(lapply(df_months_City_2016, function(x) as.data.frame(table(x))))
+
+df_months_Resort_2016 <- as.data.frame(lapply(df_months_Resort_2016, function(x) as.data.frame(table(x))))
+
+colnames(df_months_City_2016) <- c("arrival_date_month_City", "frequency_City" )
+
+colnames(df_months_Resort_2016) <- c("arrival_date_month_Resort", "frequency_Resort")
+
+df_months_City_2016$arrival_date_month_City <- factor(df_months_City_2016$arrival_date_month_City, levels = c("January", "February", "March","April", "May", "June", "July", "August", "September", "October", "November", "December"))
+
+df_months_Resort_2016$arrival_date_month_Resort <- factor(df_months_Resort_2016$arrival_date_month_Resort, levels = c("January", "February", "March","April", "May", "June", "July", "August", "September", "October", "November", "December"))
+
+
+fig_months_2016 <- plot_ly()
+
+fig_months_2016 <- fig_months_2016 %>% add_lines(data=df_months_City_2016, x = ~arrival_date_month_City, y = ~frequency_City, name = 'City Hotel', type = 'scatter', mode = 'lines', line = list(color = 'rgb(205, 12, 24)', width = 4))
+
+fig_months_2016 <- fig_months_2016 %>% add_lines(data=df_months_Resort_2016, x = ~arrival_date_month_Resort, y = ~frequency_Resort, name = 'Resort Hotel', type = 'scatter', mode = 'lines', line = list(color = 'rgb(22, 96, 167)', width = 4)) 
+
+fig_months_2016 <- fig_months_2016 %>% layout(title = "2016 - Total bookings for each hotel by month of arrival date",
+         xaxis = list(title = "Months"),
+         yaxis = list (title = "Total bookings"))
+
+
+
+# Total bookings for each hotel by month (year: 2017)
+
+df_months_City_2017 <- as.data.frame(hotel_bookings_new[hotel_bookings_new$hotel=='City Hotel' & hotel_bookings_new$arrival_date_year==2017, c( "arrival_date_month")])
+
+df_months_Resort_2017 <- as.data.frame(hotel_bookings_new[hotel_bookings_new$hotel=='Resort Hotel'& hotel_bookings_new$arrival_date_year==2017, c( "arrival_date_month")])
+
+df_months_City_2017 <- as.data.frame(lapply(df_months_City_2017, function(x) as.data.frame(table(x))))
+
+df_months_Resort_2017 <- as.data.frame(lapply(df_months_Resort_2017, function(x) as.data.frame(table(x))))
+
+colnames(df_months_City_2017) <- c("arrival_date_month_City", "frequency_City" )
+
+colnames(df_months_Resort_2017) <- c("arrival_date_month_Resort", "frequency_Resort")
+
+df_months_City_2017$arrival_date_month_City <- factor(df_months_City_2017$arrival_date_month_City, levels = c("January", "February", "March","April", "May", "June", "July", "August", "September", "October", "November", "December"))
+
+df_months_Resort_2017$arrival_date_month_Resort <- factor(df_months_Resort_2017$arrival_date_month_Resort, levels = c("January", "February", "March","April", "May", "June", "July", "August", "September", "October", "November", "December"))
+
+
+fig_months_2017 <- plot_ly()
+
+fig_months_2017 <- fig_months_2017 %>% add_lines(data=df_months_City_2017, x = ~arrival_date_month_City, y = ~frequency_City, name = 'City Hotel', type = 'scatter', mode = 'lines', line = list(color = 'rgb(205, 12, 24)', width = 4))
+
+fig_months_2017 <- fig_months_2017 %>% add_lines(data=df_months_Resort_2017, x = ~arrival_date_month_Resort, y = ~frequency_Resort, name = 'Resort Hotel', type = 'scatter', mode = 'lines', line = list(color = 'rgb(22, 96, 167)', width = 4)) 
+
+fig_months_2017 <- fig_months_2017 %>% layout(title = "2017 - Total bookings for each hotel by month of arrival date",
+         xaxis = list(title = "Months"),
+         yaxis = list (title = "Total bookings"))
+
+```
+
+```{r echo=FALSE, fig.dim=c(10,8), fig.pos= 'h', fig.align = "center"}
+fig_months_2015
+
+```
+
+```{r echo=FALSE, fig.dim=c(10,8), fig.pos= 'h', fig.align = "center"}
+fig_months_2016
+
+```
+
+```{r echo=FALSE, fig.dim=c(10,8), fig.pos= 'h', fig.align = "center"}
+fig_months_2017
+
+```
+
+```{r echo=FALSE, fig.dim=c(10,8)}
+subplot(fig_months_2015,
+fig_months_2016,
+fig_months_2017)
+
+```
+
+
+
+
+Total guests
+
+
+```{r}
+# Total guests for each hotel by month
+
+df_2016_City <- as.data.frame(hotel_bookings_new[hotel_bookings_new$is_canceled==0 
+                                                 & hotel_bookings_new$hotel=='City Hotel', 
+                                                 c( "arrival_date_month", "total_stays", "adults", "children", "babies")])
+
+df_guests_2016_City <- df_2016_City %>%
+  group_by(arrival_date_month) %>%
+  summarise(guests = sum(total_stays*(adults+children+babies))) %>%
+  ungroup() 
+
+df_2016_Resort <- as.data.frame(hotel_bookings_new[hotel_bookings_new$is_canceled==0 & hotel_bookings_new$hotel=='Resort Hotel' & hotel_bookings_new$arrival_date_year==2016, c( "arrival_date_month", "total_stays", "adults", "children", "babies")])
+
+df_guests_2016_Resort <- df_2016_Resort %>%
+  group_by(arrival_date_month) %>%
+  summarise(guests = sum(total_stays*(adults+children+babies))) %>%
+  ungroup() 
+
+
+df_guests_2016_City$arrival_date_month <- factor(df_guests_2016_City$arrival_date_month, levels = c("January", "February", "March","April", "May", "June", "July", "August", "September", "October", "November", "December"))
+
+df_guests_2016_Resort$arrival_date_month <- factor(df_guests_2016_Resort$arrival_date_month, levels = c("January", "February", "March","April", "May", "June", "July", "August", "September", "October", "November", "December"))
+
+
+fig_guests_2016 <- plot_ly()
+
+fig_guests_2016 <- fig_guests_2016 %>% add_lines(data=df_guests_2016_City, x = ~arrival_date_month, y = ~guests, name = 'City Hotel', type = 'scatter', mode = 'lines', line = list(color = 'rgb(205, 12, 24)', width = 4))
+
+fig_guests_2016 <- fig_guests_2016 %>% add_lines(data=df_guests_2016_Resort, x = ~arrival_date_month, y = ~guests, name = 'Resort Hotel', type = 'scatter', mode = 'lines', line = list(color = 'rgb(22, 96, 167)', width = 4)) 
+
+fig_guests_2016 <- fig_guests_2016 %>% layout(title = "2016 - Total guests for each hotel by month of arrival date",
+         xaxis = list(title = "Months"),
+         yaxis = list (title = "Total guests"))
+
+fig_guests_2016
+```
+
+
+
