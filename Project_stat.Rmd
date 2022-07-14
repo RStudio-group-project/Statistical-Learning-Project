@@ -520,3 +520,102 @@ plot(roc.out_AIC,  print.auc=TRUE, legacy.axes=TRUE, xlab="False positive rate",
   
 ```
 
+### LASSO
+
+```{r}
+set.seed(123)
+training.samples <- hotel_bookings_new$is_canceled %>% 
+  createDataPartition(p = 0.8, list = FALSE)
+train.data  <- hotel_bookings_new[training.samples, ]
+test.data <- hotel_bookings_new[-training.samples, ]
+
+## Dumy code categorical predictor variables
+x <- model.matrix(is_canceled~lead_time+reservation_status_date+arrival_date_month+total_stays+adults+children+babies+meal+distribution_channel+is_repeated_guest+adr+previous_cancellations+previous_bookings_not_canceled+booking_changes+deposit_type+days_in_waiting_list+customer_type+required_car_parking_spaces+total_of_special_requests, train.data)[,-1]
+## Convert the outcome (class) to a numerical variable
+y <- train.data$is_canceled
+lambdas <- 10^seq(2, -3, by = -.1)
+glmnet(x, y, family = "binomial", alpha = 0, lambda = NULL)
+
+## Find the best lambda using cross-validation
+set.seed(123) 
+cv.lasso <- cv.glmnet(x, y, alpha = 1, family = "binomial")
+## Fit the final model on the training data
+model_lasso <- glmnet(x, y, alpha = 1, family = "binomial",
+                lambda = cv.lasso$lambda.min)
+## Display regression coefficients
+coef(model_lasso)
+## Make predictions on the test data
+x.test <- model.matrix(is_canceled~lead_time+reservation_status_date+arrival_date_month+total_stays+adults+children+babies+meal+distribution_channel+is_repeated_guest+adr+previous_cancellations+previous_bookings_not_canceled+booking_changes+deposit_type+days_in_waiting_list+customer_type+required_car_parking_spaces+total_of_special_requests, test.data)[,-1]
+probabilities <- model %>% predict(newx = x.test)
+predicted.classes <- ifelse(probabilities > 0.5, "1", "0")
+## Model accuracy
+observed.classes <- test.data$is_canceled
+#mean(predicted.classes == observed.classes)
+
+cv.lasso <- cv.glmnet(x, y, alpha = 1, family = "binomial")
+plot(cv.lasso)
+cv.lasso$lambda.min
+cv.lasso$lambda.1se
+coef(cv.lasso, cv.lasso$lambda.min)
+coef(cv.lasso, cv.lasso$lambda.1se)
+
+## Final model with lambda.min
+lasso.model <- glmnet(x, y, alpha = 1, family = "binomial",
+                      lambda = cv.lasso$lambda.min)
+## Make prediction on test data
+x.test <- model.matrix(is_canceled~lead_time+reservation_status_date+arrival_date_month+total_stays+adults+children+babies+meal+distribution_channel+is_repeated_guest+adr+previous_cancellations+previous_bookings_not_canceled+booking_changes+deposit_type+days_in_waiting_list+customer_type+required_car_parking_spaces+total_of_special_requests, test.data)[,-1]
+probabilities <- lasso.model %>% predict(newx = x.test)
+predicted.classes <- ifelse(probabilities > 0.5, "1", "0")
+## Model accuracy
+observed.classes <- test.data$is_canceled
+#mean(predicted.classes == observed.classes)
+
+confusionMatrix(as.factor(predicted.classes), observed.classes)
+
+
+```
+
+### RIDGE
+
+```{r}
+lambdas <- 10^seq(2, -3, by = -.1)
+glmnet(x, y, family = "binomial", alpha = 0, lambda = NULL)
+
+## Find the best lambda using cross-validation
+set.seed(123) 
+cv.ridge <- cv.glmnet(x, y, alpha = 0, family = "binomial")
+## Fit the final model on the training data
+model_ridge <- glmnet(x, y, alpha = 0, family = "binomial",
+                lambda = cv.ridge$lambda.min)
+## Display regression coefficients
+coef(model_ridge)
+## Make predictions on the test data
+x.test <- model.matrix(is_canceled~lead_time+reservation_status_date+arrival_date_month+total_stays+adults+children+babies+meal+distribution_channel+is_repeated_guest+adr+previous_cancellations+previous_bookings_not_canceled+booking_changes+deposit_type+days_in_waiting_list+customer_type+required_car_parking_spaces+total_of_special_requests, test.data)[,-1]
+probabilities <- model %>% predict(newx = x.test)
+predicted.classes <- ifelse(probabilities > 0.5, "1", "0")
+## Model accuracy
+observed.classes <- test.data$is_canceled
+#mean(predicted.classes == observed.classes)
+
+#cv.ridge <- cv.glmnet(x, y, alpha = 1, family = "binomial")
+plot(cv.ridge)
+cv.ridge$lambda.min
+cv.ridge$lambda.1se
+coef(cv.ridge, cv.ridge$lambda.min)
+coef(cv.ridge, cv.ridge$lambda.1se)
+
+## Final model with lambda.min
+ridge.model <- glmnet(x, y, alpha = 0, family = "binomial",
+                      lambda = cv.ridge$lambda.min)
+## Make prediction on test data
+x.test <- model.matrix(is_canceled~lead_time+reservation_status_date+arrival_date_month+total_stays+adults+children+babies+meal+distribution_channel+is_repeated_guest+adr+previous_cancellations+previous_bookings_not_canceled+booking_changes+deposit_type+days_in_waiting_list+customer_type+required_car_parking_spaces+total_of_special_requests, test.data)[,-1]
+probabilities <- ridge.model %>% predict(newx = x.test)
+predicted.classes <- ifelse(probabilities > 0.5, "1", "0")
+## Model accuracy
+observed.classes <- test.data$is_canceled
+#mean(predicted.classes == observed.classes)
+
+confusionMatrix(as.factor(predicted.classes), observed.classes)
+
+```
+
