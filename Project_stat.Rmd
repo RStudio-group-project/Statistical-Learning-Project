@@ -19,7 +19,7 @@ library(leaps)
 library(ggcorrplot)
 library(regclass)
 library(boot)
-#library(caret)
+library(caret)
 library(MASS)
 library(knitr)
 library(corrplot)
@@ -264,9 +264,11 @@ fig_months_2015 <- fig_months_2015 %>% add_lines(data=df_months_Resort_2015, x =
 fig_months_2015 <- fig_months_2015 %>% layout(title = "2015 - Total bookings for each hotel by month of arrival date",
          xaxis = list(title = "Months",tickangle = -45),
          yaxis = list (title = "Total bookings"))
+fig_months_2015
 
+```
 
-
+```{r}
 
 # Total bookings for each hotel by month (year: 2016)
 
@@ -294,9 +296,13 @@ fig_months_2016 <- fig_months_2016 %>% add_lines(data=df_months_City_2016, x = ~
 fig_months_2016 <- fig_months_2016 %>% add_lines(data=df_months_Resort_2016, x = ~arrival_date_month_Resort, y = ~frequency_Resort, name = 'Resort Hotel', type = 'scatter', mode = 'lines', line = list(color = 'rgb(22, 96, 167)', width = 4)) 
 
 fig_months_2016 <- fig_months_2016 %>% layout(title = "2016 - Total bookings for each hotel by month of arrival date",
-         xaxis = list(title = "Months"),
+         xaxis = list(title = "Months",tickangle = -45),
          yaxis = list (title = "Total bookings"))
 
+fig_months_2016
+```
+
+```{r}
 
 
 # Total bookings for each hotel by month (year: 2017)
@@ -325,32 +331,15 @@ fig_months_2017 <- fig_months_2017 %>% add_lines(data=df_months_City_2017, x = ~
 fig_months_2017 <- fig_months_2017 %>% add_lines(data=df_months_Resort_2017, x = ~arrival_date_month_Resort, y = ~frequency_Resort, name = 'Resort Hotel', type = 'scatter', mode = 'lines', line = list(color = 'rgb(22, 96, 167)', width = 4)) 
 
 fig_months_2017 <- fig_months_2017 %>% layout(title = "2017 - Total bookings for each hotel by month of arrival date",
-         xaxis = list(title = "Months"),
+         xaxis = list(title = "Months",tickangle = -45),
          yaxis = list (title = "Total bookings"))
 
-```
-
-```{r echo=FALSE, fig.dim=c(10,8), fig.pos= 'h', fig.align = "center"}
-fig_months_2015
-
-```
-
-```{r echo=FALSE, fig.dim=c(10,8), fig.pos= 'h', fig.align = "center"}
-fig_months_2016
-
-```
-
-```{r echo=FALSE, fig.dim=c(10,8), fig.pos= 'h', fig.align = "center"}
 fig_months_2017
-
 ```
 
-```{r echo=FALSE, fig.dim=c(10,8)}
-subplot(fig_months_2015,
-fig_months_2016,
-fig_months_2017)
 
-```
+
+
 
 
 
