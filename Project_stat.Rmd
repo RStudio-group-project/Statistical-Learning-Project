@@ -390,3 +390,122 @@ fig_guests
 
 ```
 
+
+
+```{r}
+# Total guests for each hotel by month (year: 2015)
+
+df_2015_City <- as.data.frame(hotel_bookings_new[hotel_bookings_new$is_canceled==0 & hotel_bookings_new$hotel=='City Hotel' & hotel_bookings_new$arrival_date_year==2015, c( "arrival_date_month", "total_stays", "adults", "children", "babies")])
+
+df_guests_2015_City <- df_2015_City %>%
+  group_by(arrival_date_month) %>%
+  summarise(guests = sum(total_stays*(adults+children+babies))) %>%
+  ungroup() 
+
+df_2015_Resort <- as.data.frame(hotel_bookings_new[hotel_bookings_new$is_canceled==0 & hotel_bookings_new$hotel=='Resort Hotel' & hotel_bookings_new$arrival_date_year==2015, c( "arrival_date_month", "total_stays", "adults", "children", "babies")])
+
+df_guests_2015_Resort <- df_2015_Resort %>%
+  group_by(arrival_date_month) %>%
+  summarise(guests = sum(total_stays*(adults+children+babies))) %>%
+  ungroup() 
+
+
+df_guests_2015_City$arrival_date_month <- factor(df_guests_2015_City$arrival_date_month, levels = c("July", "August", "September", "October", "November", "December"))
+
+df_guests_2015_Resort$arrival_date_month <- factor(df_guests_2015_Resort$arrival_date_month, levels = c("July", "August", "September", "October", "November", "December"))
+
+
+fig_guests_2015 <- plot_ly()
+
+fig_guests_2015 <- fig_guests_2015 %>% add_lines(data=df_guests_2015_City, x = ~arrival_date_month, y = ~guests, name = 'City Hotel', type = 'scatter', mode = 'lines', line = list(color = 'rgb(205, 12, 24)', width = 4))
+
+fig_guests_2015 <- fig_guests_2015 %>% add_lines(data=df_guests_2015_Resort, x = ~arrival_date_month, y = ~guests, name = 'Resort Hotel', type = 'scatter', mode = 'lines', line = list(color = 'rgb(22, 96, 167)', width = 4)) 
+
+fig_guests_2015 <- fig_guests_2015 %>% layout(title = "2015 - Total guests for each hotel by month of arrival date",
+         xaxis = list(title = "Months"),
+         yaxis = list (title = "Total guests"))
+
+fig_guests_2015
+
+```
+
+
+
+
+```{r}
+# Total guests for each hotel by month (year: 2016)
+
+df_2016_City <- as.data.frame(hotel_bookings_new[hotel_bookings_new$is_canceled==0 & hotel_bookings_new$hotel=='City Hotel' & hotel_bookings_new$arrival_date_year==2016, c( "arrival_date_month", "total_stays", "adults", "children", "babies")])
+
+df_guests_2016_City <- df_2016_City %>%
+  group_by(arrival_date_month) %>%
+  summarise(guests = sum(total_stays*(adults+children+babies))) %>%
+  ungroup() 
+
+df_2016_Resort <- as.data.frame(hotel_bookings_new[hotel_bookings_new$is_canceled==0 & hotel_bookings_new$hotel=='Resort Hotel' & hotel_bookings_new$arrival_date_year==2016, c( "arrival_date_month", "total_stays", "adults", "children", "babies")])
+
+df_guests_2016_Resort <- df_2016_Resort %>%
+  group_by(arrival_date_month) %>%
+  summarise(guests = sum(total_stays*(adults+children+babies))) %>%
+  ungroup() 
+
+
+df_guests_2016_City$arrival_date_month <- factor(df_guests_2016_City$arrival_date_month, levels = c("January", "February", "March","April", "May", "June", "July", "August", "September", "October", "November", "December"))
+
+df_guests_2016_Resort$arrival_date_month <- factor(df_guests_2016_Resort$arrival_date_month, levels = c("January", "February", "March","April", "May", "June", "July", "August", "September", "October", "November", "December"))
+
+
+fig_guests_2016 <- plot_ly()
+
+fig_guests_2016 <- fig_guests_2016 %>% add_lines(data=df_guests_2016_City, x = ~arrival_date_month, y = ~guests, name = 'City Hotel', type = 'scatter', mode = 'lines', line = list(color = 'rgb(205, 12, 24)', width = 4))
+
+fig_guests_2016 <- fig_guests_2016 %>% add_lines(data=df_guests_2016_Resort, x = ~arrival_date_month, y = ~guests, name = 'Resort Hotel', type = 'scatter', mode = 'lines', line = list(color = 'rgb(22, 96, 167)', width = 4)) 
+
+fig_guests_2016 <- fig_guests_2016 %>% layout(title = "2016 - Total guests for each hotel by month of arrival date",
+         xaxis = list(title = "Months"),
+         yaxis = list (title = "Total guests"))
+
+fig_guests_2016
+```
+
+
+
+```{r}
+# Total guests for each hotel by month (year: 2017)
+
+df_2017_City <- as.data.frame(hotel_bookings_new[hotel_bookings_new$is_canceled==0 & hotel_bookings_new$hotel=='City Hotel' & hotel_bookings_new$arrival_date_year==2017, c( "arrival_date_month", "total_stays", "adults", "children", "babies")])
+
+df_guests_2017_City <- df_2017_City %>%
+  group_by(arrival_date_month) %>%
+  summarise(guests = sum(total_stays*(adults+children+babies))) %>%
+  ungroup() 
+
+df_2017_Resort <- as.data.frame(hotel_bookings_new[hotel_bookings_new$is_canceled==0 & hotel_bookings_new$hotel=='Resort Hotel' & hotel_bookings_new$arrival_date_year==2017, c( "arrival_date_month", "total_stays", "adults", "children", "babies")])
+
+df_guests_2017_Resort <- df_2017_Resort %>%
+  group_by(arrival_date_month) %>%
+  summarise(guests = sum(total_stays*(adults+children+babies))) %>%
+  ungroup() 
+
+
+df_guests_2017_City$arrival_date_month <- factor(df_guests_2017_City$arrival_date_month, levels = c("January", "February", "March","April", "May", "June", "July", "August"))
+
+df_guests_2017_Resort$arrival_date_month <- factor(df_guests_2017_Resort$arrival_date_month, levels = c("January", "February", "March","April", "May", "June", "July", "August"))
+
+
+fig_guests_2017 <- plot_ly()
+
+fig_guests_2017 <- fig_guests_2017 %>% add_lines(data=df_guests_2017_City, x = ~arrival_date_month, y = ~guests, name = 'City Hotel', type = 'scatter', mode = 'lines', line = list(color = 'rgb(205, 12, 24)', width = 4))
+
+fig_guests_2017 <- fig_guests_2017 %>% add_lines(data=df_guests_2017_Resort, x = ~arrival_date_month, y = ~guests, name = 'Resort Hotel', type = 'scatter', mode = 'lines', line = list(color = 'rgb(22, 96, 167)', width = 4)) 
+
+fig_guests_2017 <- fig_guests_2017 %>% layout(title = "2016 - Total guests for each hotel by month of arrival date",
+         xaxis = list(title = "Months"),
+         yaxis = list (title = "Total guests"))
+
+fig_guests_2017
+```
+
+
+
+
