@@ -743,6 +743,36 @@ hotel_bookings_new%>%
   ) + theme_bw()
 ```
 
+```{r warning=FALSE}
+gg=hotel_bookings_new%>%
+  mutate("children_or_babies"=(ifelse((children>0 | babies>0), "Yes", "No")))%>%
+  mutate("baby"=(ifelse(babies>0, "Yes", "No")))%>%
+  mutate("child"=(ifelse(children>0, "Yes", "No")))
+
+ggplot(gg, aes(x = lead_time, fill = children_or_babies)) + 
+  geom_density(alpha = 0.4) + 
+  labs(title = "Lead Time by presence of children or babies",
+       x = "Lead Time",
+       y = "Count") +
+  xlim(0,500)+
+  theme_bw() + theme(legend.position = "top")
+
+ggplot(gg, aes(x = lead_time, fill = baby)) + 
+  geom_density(alpha = 0.4) + 
+  labs(title = "Lead Time by presence of babies",
+       x = "Lead Time",
+       y = "Count") +
+  xlim(0,500)+
+  theme_bw() + theme(legend.position = "top")
+
+ggplot(gg, aes(x = lead_time, fill = child)) + 
+  geom_density(alpha = 0.4) + 
+  labs(title = "Lead Time by presence of children",
+       x = "Lead Time",
+       y = "Count") +
+  xlim(0,500)+
+  theme_bw() + theme(legend.position = "top")
+ ```
 
 ## Chi-square
 
