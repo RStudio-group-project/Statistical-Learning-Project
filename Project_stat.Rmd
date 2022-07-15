@@ -947,48 +947,56 @@ confusionMatrix(as.factor(predicted.classes), observed.classes)
 ### RIDGE
 
 ```{r}
-lambdas <- 10^seq(2, -3, by = -.1)
-glmnet(x, y, family = "binomial", alpha = 0, lambda = NULL)
+x <- model.matrix(is_canceled~lead_time+reservation_status_date+arrival_date_month+total_stays+adults+children+babies+meal+distribution_channel+is_repeated_guest+adr+previous_cancellations+previous_bookings_not_canceled+booking_changes+deposit_type+days_in_waiting_list+customer_type+required_car_parking_spaces+total_of_special_requests, hotel_bookings_new)[,-1]
+y <- hotel_bookings_new$is_canceled
 
-## Find the best lambda using cross-validation
-set.seed(123) 
-cv.ridge <- cv.glmnet(x, y, alpha = 0, family = "binomial")
-## Fit the final model on the training data
-model_ridge <- glmnet(x, y, alpha = 0, family = "binomial",
-                lambda = cv.ridge$lambda.min)
-## Display regression coefficients
-coef(model_ridge)
-## Make predictions on the test data
-x.test <- model.matrix(is_canceled~lead_time+reservation_status_date+arrival_date_month+total_stays+adults+children+babies+meal+distribution_channel+is_repeated_guest+adr+previous_cancellations+previous_bookings_not_canceled+booking_changes+deposit_type+days_in_waiting_list+customer_type+required_car_parking_spaces+total_of_special_requests, test.data)[,-1]
-probabilities <- complete_model %>% predict(newx = x.test)
-predicted.classes <- ifelse(probabilities > 0.5, "1", "0")
-## Model accuracy
-observed.classes <- test.data$is_canceled
-#mean(predicted.classes == observed.classes)
+#Ridge plots
+grid <- 10^seq(10, -2, length=100)
+ridge.mod <- glmnet(x, y, alpha=0, family="binomial", lambda=grid)
+plot(ridge.mod, label=TRUE)
+plot(ridge.mod, xvar="lambda", label=TRUE)
+grid[65:75]
+predict(ridge.mod, s=50, type="coefficients")
 
-#cv.ridge <- cv.glmnet(x, y, alpha = 1, family = "binomial")
-plot(cv.ridge)
-cv.ridge$lambda.min
-cv.ridge$lambda.1se
-coef(cv.ridge, cv.ridge$lambda.min)
-coef(cv.ridge, cv.ridge$lambda.1se)
+#Ridge on train set
+train <- sample(1:nrow(x), nrow(x)/2)
+test <- (-train)
+y.test <- y[test]
 
-## Final model with lambda.min
-ridge.model <- glmnet(x, y, alpha = 0, family = "binomial",
-                      lambda = cv.ridge$lambda.min)
-## Make prediction on test data
-x.test <- model.matrix(is_canceled~lead_time+reservation_status_date+arrival_date_month+total_stays+adults+children+babies+meal+distribution_channel+is_repeated_guest+adr+previous_cancellations+previous_bookings_not_canceled+booking_changes+deposit_type+days_in_waiting_list+customer_type+required_car_parking_spaces+total_of_special_requests, test.data)[,-1]
-probabilities <- ridge.model %>% predict(newx = x.test)
-predicted.classes <- ifelse(probabilities > 0.5, "1", "0")
-## Model accuracy
-observed.classes <- test.data$is_canceled
-#mean(predicted.classes == observed.classes)
+ridge.mod <- glmnet(x[train, ], y[train], alpha = 0, family="binomial",
+                    lambda = grid, thresh = 1e-12)
 
-confusionMatrix(as.factor(predicted.classes), observed.classes)
+ridge.pred <- predict(ridge.mod, s = 4, newx = x[test, ], type="response")
+predicted.classes <- ifelse(ridge.pred > 0.5, "1", "0")
+confusionMatrix(y.test, as.factor(predicted.classes))
 
+#Cross-validation to choose lambda 
+set.seed(1)
+cv.out <- cv.glmnet(x[train, ], y[train], alpha = 0, family="binomial", nfold=10)
+cv.out$lambda[1:10]
+summary(cv.out$lambda)
+
+cv.out$cvm[1:10]
+cv.out$cvsd[1:10]
+plot(cv.out)
+
+i.bestlam <- which.min(cv.out$cvm)
+#i.bestlam 
+bestlam <- cv.out$lambda[i.bestlam]
+#bestlam
+cv.out$cvm[i.bestlam]
+#min(cv.out$cvm)
+
+bestlam <- cv.out$lambda.min
+cat("Best lambda is:", bestlam)
+
+#Ridge with best lambda
+ridge.pred <- predict(ridge.mod, s = bestlam,
+                      newx = x[test, ])
+#Evaluation
+predicted.classes <- ifelse(ridge.pred > 0.5, "1", "0")
+confusionMatrix(y.test, as.factor(predicted.classes))
 ```
-
-
 
 ### Logistic VS LDA VS QDA
 ```{r}
