@@ -519,6 +519,65 @@ roc.out_AIC <- roc(hotel_bookings_new$is_canceled, logistic.prob_AIC, levels=c(0
 plot(roc.out_AIC,  print.auc=TRUE, legacy.axes=TRUE, xlab="False positive rate", ylab="True positive rate", col="red") 
   
 ```
+### Logistic VS LDA VS QDA
+```{r}
+#Train & Test
+set.seed(321)
+trainIndex <- createDataPartition(little_data$is_canceled,p=0.75,list=FALSE)
+hotel_data_train=little_data[trainIndex,]
+hotel_data_test=little_data[-trainIndex,]
+is_canc_test=hotel_data_test$is_canceled
+```
+
+
+```{r}
+#Logistic Regression
+glm.fits <- glm(is_canceled~lead_time+adr+total_of_special_requests,data=hotel_data_train,family=binomial)
+glm.probs <- predict(glm.fits,hotel_data_test,type="response")
+glm.pred <- rep(0,29847)
+glm.pred[glm.probs>.5] <- 1
+
+#Evaluation
+confusionMatrix(as.factor(glm.pred),is_canc_test)
+cat("Mean error is:", mean(glm.pred!=is_canc_test))
+```
+
+```{r}
+#Polinomial Regression
+glm.fits <- glm(is_canceled~lead_time+adr+total_of_special_requests+I(adr^3)+I(lead_time^2)+I(total_of_special_requests^2),data=hotel_data_train,family=binomial)
+glm.probs <- predict(glm.fits,hotel_data_test,type="response")
+glm.pred <- rep(0,29847)
+glm.pred[glm.probs>.5] <- 1
+
+#Evaluation
+confusionMatrix(as.factor(glm.pred),is_canc_test)
+cat("Mean error is:", mean(glm.pred!=is_canc_test))
+```
+
+```{r}
+#LDA
+lda.fit <- lda(is_canceled~lead_time+adr+total_of_special_requests,data=hotel_data_train)
+par(mar=c(1,1,1,1))
+plot(lda.fit)
+lda.pred <- predict(lda.fit, hotel_data_test)
+lda.class <- lda.pred$class
+
+#Evaluation
+confusionMatrix(as.factor(lda.class),is_canc_test)
+cat("Mean error is:", mean(glm.pred!=is_canc_test))
+```
+
+```{r}
+#QDA
+qda.fit <- qda(is_canceled~lead_time+adr+total_of_special_requests,data=hotel_data_train)
+qda.pred <- predict(qda.fit, hotel_data_test)
+qda.class <- qda.pred$class
+
+
+# Evaluation
+confusionMatrix(as.factor(qda.class),is_canc_test)
+cat("Mean error is:", mean(glm.pred!=is_canc_test))
+```
 
 ### LASSO
 
