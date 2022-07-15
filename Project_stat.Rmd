@@ -19,7 +19,7 @@ library(leaps)
 library(ggcorrplot)
 library(regclass)
 library(boot)
-#library(caret)
+library(caret)
 library(MASS)
 library(knitr)
 library(corrplot)
@@ -507,7 +507,7 @@ fig_guests_2017
 ```
 
 
-Reserved room typr vs Assigned room type
+Reserved room type vs Assigned room type
 
 ```{r}
 # Reserved room type table
