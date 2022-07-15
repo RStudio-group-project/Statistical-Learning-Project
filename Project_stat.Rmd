@@ -725,8 +725,7 @@ fig_assigned
 The following boxplot shows how cancelations in City and Resort hotel are related to lead_time. We remind here that lead time is the time that elapsed between the day when the booking was made and the actual day of checking-in. We can see that that the median on lead time from cancelled and not cancelled is different and both in City and in Resort Hotel this value is lower in case of cancellation, which means that cancellation usually occurs quite soon after booking. The chances of cancellation are less if sufficient time has elapsed from the date of booking.
 
 ```{r warning=FALSE}
-# Boxplot to show cancelleations based on lead_time
-
+# Boxplot to show cancellations based on lead_time
 ggplot(data = hotel_bookings_new, aes(x=is_canceled, y=lead_time, fill=is_canceled))+
   geom_boxplot(position = position_dodge() ) +
   labs(
@@ -734,10 +733,10 @@ ggplot(data = hotel_bookings_new, aes(x=is_canceled, y=lead_time, fill=is_cancel
     x = "Hotel Type",
     y = "Lead Time (Days)"
   ) +
-  scale_fill_manual(values=c("#EF7365", "#FBD26C"),
+  scale_fill_manual(values=c("#7fd8be", "#d87f99"),
     name = "Booking Status",
     breaks = c("0", "1"),
-    labels = c("Cancelled", "Not Cancelled")
+    labels = c("Not Cancelled","Cancelled" )
   ) + theme_bw() +
   facet_wrap(~hotel)
 ```
@@ -751,10 +750,10 @@ ggplot(hotel_bookings_new, aes(x = lead_time, fill = is_canceled)) +
   geom_density(alpha = 0.2) + 
   labs(title = "Average Daily rate by Hotel",
        x = "Lead Time",
-       y = "Count") + scale_fill_manual(values=c("#EF7365", "#FBD26C"),
+       y = "Count") + scale_fill_manual(values=c("#7fd8be", "#d87f99"),
     name = "Booking Status",
     breaks = c("0", "1"),
-    labels = c("Cancelled", "Not Cancelled")) + 
+    labels = c("Not Cancelled","Cancelled" )) + 
   xlim(0,500) +
   theme_bw() + theme(legend.position = "top")
 ```
@@ -772,18 +771,13 @@ This can be easily seen also on a donut plot:
 
 ```{r warning=FALSE}
 # Cancellations donut plot
-
 df_canc <- as.data.frame(hotel_bookings_new[, c("is_canceled")])
 df_canc <- as.data.frame(lapply(df_canc, function(x) as.data.frame(table(x))))
-
 colnames(df_canc) <- c("is_canceled", "frequency")
-
 df_canc
-
-colors_donut <- c('rgb((239,115,101))','rgb((251,210,108))') 
-
-fig_canc <- df_canc %>% plot_ly(labels = ~is_canceled, values = ~frequency, 
-                                  marker = list(colors = colors_donut,
+colors_donut_canc <- c('rgb(127,216,190)','rgb(216,127,153)') 
+fig_canc <- df_canc %>% plot_ly(labels = c('not canceled','canceled' ), values = ~frequency, 
+                                  marker = list(colors = colors_donut_canc,
                                   line = list(color = '#FFFFFF', width = 1)))
 fig_canc <- fig_canc %>% add_pie(hole = 0.6)
 fig_canc <- fig_canc %>% layout(title = "Total number of canceled and not canceled bookings",  
@@ -792,9 +786,7 @@ fig_canc <- fig_canc %>% layout(title = "Total number of canceled and not cancel
                                    showticklabels = FALSE),
                       yaxis = list(showgrid = FALSE, zeroline = FALSE,
                                    showticklabels = FALSE))
-
 fig_canc
-
 ```
 
 
@@ -802,7 +794,6 @@ As stated before out of all the bookings, the majority of requests is for City H
 
 ```{r warning=FALSE}
 # Percentage of cancellations for hotel type
-
 ggplot(data = hotel_bookings_new,
        aes(
          x = hotel,
@@ -822,7 +813,7 @@ ggplot(data = hotel_bookings_new,
        x = "Hotel Type",
        y = "Count") +
   theme_classic() +
-  scale_fill_manual(values=c("#EF7365", "#FBD26C"),
+  scale_fill_manual(values=c("#7fd8be", "#d87f99"),
     name = "Booking Status",
     breaks = c("0", "1"),
     labels = c("Not Cancelled", "Cancelled")
@@ -834,14 +825,13 @@ The following result is very interesting: the plot shows the number of cancellat
 
 ```{r warning=FALSE}
 # This plot shows the number of bookings per deposit_type
-
 ggplot(hotel_bookings_new, aes(deposit_type, fill = is_canceled)) + 
   geom_bar(stat = "count", position = position_dodge()) + 
   labs(title = "Number of bookings for deposit type",
        x = "deposit_type",
        y = "Log(count)") +
   theme_bw() +
-         scale_fill_manual(values=c("#EF7365", "#FBD26C"),
+         scale_fill_manual(values=c("#7fd8be", "#d87f99"),
     name = "Booking Status",
     breaks = c("0", "1"),
     labels = c("Not Cancelled", "Cancelled") ) + scale_y_continuous(trans='log2')
@@ -855,8 +845,8 @@ ggplot(data = hotel_bookings_new, aes(distribution_channel,fill=is_canceled))+
   labs(
     title = "How people do reservations"
   ) +
-  theme(axis.text.x=element_text(angle =  40 )) +
-  scale_fill_manual(values=c("#EF7365", "#FBD26C"),
+  theme(axis.text.x=element_text(angle = 40 )) +
+  scale_fill_manual(values=c("#7fd8be", "#d87f99"),
     name = "Booking Status",
     breaks = c("0", "1"),
     labels = c("Not Cancelled", "Cancelled")) +
@@ -866,13 +856,12 @@ ggplot(data = hotel_bookings_new, aes(distribution_channel,fill=is_canceled))+
 
 ```{r warning=FALSE}
 # days in waiting list
-
 hotel_bookings_new%>%
   filter(days_in_waiting_list>1)%>%
   ggplot(aes(x=days_in_waiting_list,fill=is_canceled))+
   geom_histogram(binwidth = 10) +
   labs(title="Number of days in waiting list before confirmation")+
-   scale_fill_manual(values=c("#EF7365", "#FBD26C"),
+   scale_fill_manual(values=c("#7fd8be", "#d87f99"),
     name = "Booking Status",
     breaks = c("0", "1"),
     labels = c("Not Cancelled", "Cancelled")
