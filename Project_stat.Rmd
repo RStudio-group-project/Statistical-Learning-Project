@@ -31,7 +31,9 @@ library(plotly)
 
 ## Hotel booking demand dataset
 
-We decided to analyze the *Hotel booking demand dataset* that we load from Kaggle. This dataset contains information about two different kinds of hotel: City Hotel and Resort Hotel. Each observation represents an ho.tel booking. Both hotels are located in Portugal: the resort hotel at the resort region of Algarve and the city hotel at the city of Lisbon.
+We decided to analyze the *Hotel booking demand dataset* that we load from Kaggle. This dataset contains information about two different kinds of hotel: City Hotel and Resort Hotel. Each observation represents an hotel booking. Both hotels are located in Portugal: the resort hotel at the resort region of Algarve and the city hotel at the city of Lisbon.
+The aim of the project is to assess if it is possible, starting from the informations provided by the booking dataset, to predict how likely is that a customer who booked a room will cancel the reservation. This can allow a hotel to plan how many staff are needed, how much food to buy, or, more in general, if it is worth (and to what extent) to engage in overselling in order to fill all available rooms. To achieve this result a prior explanatory analysis is required.
+Most of the work deals with analysis and detailed description of the main features with respect to the variable “is_canceled”,  but we decided at the beginning to take a more general look on the whole set of data, in order to have a broader view of the main informations provided by the dataset.
 
 
 ```{r}
@@ -130,8 +132,7 @@ summary(hotel_bookings_new)
 
 # EDA
 
-As stated above,the dataset contains information about two different kinds of hotel: City Hotel and Resort Hotel. There are 79330 observation for the former and 40060 for the latter.
-
+The dataset is made of two original datasets with hotel demand data. One of the hotels is a City Hotel and the other one is a Resort Hotel. The first thing to notice is that data are quite unbalanced and there are 79330 observations for the former and 40060 for the latter.
 
 ```{r}
 # Hotel donut plot
@@ -161,7 +162,6 @@ fig_hotel
 
 Both hotels are located in Portugal; this is the reason why most of the guests come from Portugal, as we can see from the map plot below:
 
-
 ```{r}
 # Country plot
 
@@ -175,6 +175,35 @@ fig_country <- plot_ly(df_country, type='choropleth', locations=df_country$count
 fig_country <- fig_country %>% layout(title = "Country plot")
 fig_country
 ```
+
+
+In the following lines a detailed description of the variables in alphabetical order is provided:
+
+ADR: the Average Daily Rate, which is the rate obtained by dividing the sum of all lodging transaction by the total number of staying nights;
+Adults: the number of adults
+Agent: ID of the travel agency that made the booking
+ArrivalDateMonth
+…
+
+The following plot points out the difference between the two kind of hotels, since most of the reservations related to the City Hotel last approximately 2-3 nights, while in case of the Resort Hotel (come prima) the same pattern is still observed, but in the meantime also 7 nights stand out as being a very popular choice among guests. More in general a long stay is very unusual in case of City Hotels.
+
+```{r warning=FALSE}
+ggplot(hotel_bookings_new, aes(x=total_stays, fill = hotel)) + 
+  geom_bar(stat = "count", position = position_dodge()) + 
+  scale_fill_manual(values=c("#EF7365", "#FBD26C"),
+    name = "Hotel",
+    breaks = c("City Hotel", "Resort Hotel"),
+    labels = c("City Hotel", "Resort Hotel")
+  ) +
+  labs(title = "Length of Stay",
+       x = "Number of Nights",
+       y = "Count") + xlim(0,20) + 
+  theme_bw()
+
+```
+
+
+The dataset comprehends observations from three years, between the 1st of July of 2015 and the 31st of August 2017, including bookings that effectively arrived and bookings that were canceled. Another information provided by the dataset is the month of arrival, which allows us to take a look at the pattern of the booking curves month by month.
 
 Total bookings considering both canceled and not canceled
 Total guests considering only is_canceled==0
@@ -338,20 +367,9 @@ fig_months_2017
 ```
 
 
-
-
-
-
-
+In the plot of 2016 (avevamo detto di non sottolineare Giugno ma di parlare dell’andamento del periodo estivo) a strange behavior is displayed and we can detect a drop in the number of bookings during summertime. Therefore we decided to make a plot with the number of guests for each month and the result is a graph where this value seems to be higher during summertime, which is what we expected.
 
 Total guests
-
-
-
-
-
-
-
 
 ```{r}
 # Total guests for each hotel by month
@@ -507,7 +525,7 @@ fig_guests_2017
 ```
 
 
-Reserved room type vs Assigned room type
+Taking a look at the other variables we spent a few time in the analysis of the features *reserved_room_type* and *assigned_room_type* to understand what are the differences among them.
 
 ```{r}
 # Reserved room type table
@@ -568,81 +586,308 @@ fig_assigned
 ```
 
 
+The following boxplot shows how cancelations in City and Resort hotel are related to lead_time. We remind here that lead time is the time that elapsed between the day when the booking was made and the actual day of checking-in. We can see that that the median on lead time from cancelled and not cancelled is different and both in City and in Resort Hotel this value is lower in case of cancellation, which means that cancellation usually occurs quite soon after booking. The chances of cancellation are less if sufficient time has elapsed from the date of booking.
+
+```{r warning=FALSE}
+# Boxplot to show cancelleations based on lead_time
+
+ggplot(data = hotel_bookings_new, aes(x=is_canceled, y=lead_time, fill=is_canceled))+
+  geom_boxplot(position = position_dodge() ) +
+  labs(
+    title = "Cancellation By Hotel Type Based on Lead Time",
+    x = "Hotel Type",
+    y = "Lead Time (Days)"
+  ) +
+  scale_fill_manual(values=c("#EF7365", "#FBD26C"),
+    name = "Booking Status",
+    breaks = c("0", "1"),
+    labels = c("Cancelled", "Not Cancelled")
+  ) + theme_bw() +
+  facet_wrap(~hotel)
+```
+
+
+All these things can be shown also by the density plot:
+
+```{r warning=FALSE}
+ggplot(hotel_bookings_new, aes(x = lead_time, fill = is_canceled)) + 
+  geom_histogram(aes(y = ..density..), position = position_dodge(), binwidth = 20 ) +
+  geom_density(alpha = 0.2) + 
+  labs(title = "Average Daily rate by Hotel",
+       x = "Lead Time",
+       y = "Count") + scale_fill_manual(values=c("#EF7365", "#FBD26C"),
+    name = "Booking Status",
+    breaks = c("0", "1"),
+    labels = c("Cancelled", "Not Cancelled")) + 
+  xlim(0,500) +
+  theme_bw() + theme(legend.position = "top")
+```
+
+
+We want now to focus our analysis on the variable *is_canceled*. We first notice that the two classes are quite unbalanced:
+
+```{r}
+table(hotel_bookings_new$is_canceled)
+```
+
+
+This can be easily seen also on a donut plot:
+
+
+```{r warning=FALSE}
+# Cancellations donut plot
+
+df_canc <- as.data.frame(hotel_bookings_new[, c("is_canceled")])
+df_canc <- as.data.frame(lapply(df_canc, function(x) as.data.frame(table(x))))
+
+colnames(df_canc) <- c("is_canceled", "frequency")
+
+df_canc
+
+colors_donut <- c('rgb((239,115,101))','rgb((251,210,108))') 
+
+fig_canc <- df_canc %>% plot_ly(labels = ~is_canceled, values = ~frequency, 
+                                  marker = list(colors = colors_donut,
+                                  line = list(color = '#FFFFFF', width = 1)))
+fig_canc <- fig_canc %>% add_pie(hole = 0.6)
+fig_canc <- fig_canc %>% layout(title = "Total number of canceled and not canceled bookings",  
+                      showlegend = T,
+                      xaxis = list(showgrid = FALSE, zeroline = FALSE,
+                                   showticklabels = FALSE),
+                      yaxis = list(showgrid = FALSE, zeroline = FALSE,
+                                   showticklabels = FALSE))
+
+fig_canc
+
+```
+
+
+As stated before out of all the bookings, the majority of requests is for City Hotel (about 65% of the total bookings) and from the plot we can see that the percentage of confirmed status is higher than cancellations in both cases. In particular the ratio between canceled and not canceled is lower in case of Resort, which means that those who book a resort have a lower tendency to cancel their booking.
+
+```{r warning=FALSE}
+# Percentage of cancellations for hotel type
+
+ggplot(data = hotel_bookings_new,
+       aes(
+         x = hotel,
+         y = prop.table(stat(count)),
+         fill = factor(is_canceled),
+         label = scales::percent(prop.table(stat(count)))
+       )) +
+  geom_bar(position = position_dodge()) +
+  geom_text(
+    stat = "count",
+    position = position_dodge(.9),
+    vjust = -0.5,
+    size = 3
+  ) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(title = "Cancellation Status by Hotel Type",
+       x = "Hotel Type",
+       y = "Count") +
+  theme_classic() +
+  scale_fill_manual(values=c("#EF7365", "#FBD26C"),
+    name = "Booking Status",
+    breaks = c("0", "1"),
+    labels = c("Not Cancelled", "Cancelled")
+  ) + theme_bw()
+```
+
+
+The following result is very interesting: the plot shows the number of cancellations for different types of deposit that a customer can made to guarantee the booking. Most of the time no deposit is required, but the main observation here is that if the deposit is not recoverable the number of cancellations becomes way higher than the number of confirmed bookings. In the plot a log scaling was applied on the y-axis to better show the difference among cancellations in the Non Refundable case (without the scaling the number of non cancelled reservations was so small that it could be barely seen).
+
+```{r warning=FALSE}
+# This plot shows the number of bookings per deposit_type
+
+ggplot(hotel_bookings_new, aes(deposit_type, fill = is_canceled)) + 
+  geom_bar(stat = "count", position = position_dodge()) + 
+  labs(title = "Number of bookings for deposit type",
+       x = "deposit_type",
+       y = "Log(count)") +
+  theme_bw() +
+         scale_fill_manual(values=c("#EF7365", "#FBD26C"),
+    name = "Booking Status",
+    breaks = c("0", "1"),
+    labels = c("Not Cancelled", "Cancelled") ) + scale_y_continuous(trans='log2')
+```
+
+
+```{r warning=FALSE}
+  # how people do reservations (distribution channel) and if the cancel it
+ggplot(data = hotel_bookings_new, aes(distribution_channel,fill=is_canceled))+
+  geom_bar(stat = "count", position = position_dodge()) +
+  labs(
+    title = "How people do reservations"
+  ) +
+  theme(axis.text.x=element_text(angle =  40 )) +
+  scale_fill_manual(values=c("#EF7365", "#FBD26C"),
+    name = "Booking Status",
+    breaks = c("0", "1"),
+    labels = c("Not Cancelled", "Cancelled")) +
+  facet_wrap(~hotel) + theme_bw()
+```
+
+
+```{r warning=FALSE}
+# days in waiting list
+
+hotel_bookings_new%>%
+  filter(days_in_waiting_list>1)%>%
+  ggplot(aes(x=days_in_waiting_list,fill=is_canceled))+
+  geom_histogram(binwidth = 10) +
+  labs(title="Number of days in waiting list before confirmation")+
+   scale_fill_manual(values=c("#EF7365", "#FBD26C"),
+    name = "Booking Status",
+    breaks = c("0", "1"),
+    labels = c("Not Cancelled", "Cancelled")
+  ) + theme_bw()
+```
+
+
+## Chi-square
+
+The remainder of this analysis  will be focused on *is_canceled*, which is a binary variable (with values: 0,1). The aim is to find from the observations if a booking will be canceled or not. To achieve this purpose we need to take into account that the most of the variables are categorical variables. It’s very common to start this kind of analysis by verifying the correlation between variables, so to understand what is their relationship. The presence of a so great amount of categorical variables in the case under examination encouraged us to use a Chi-squared test to see the relationship between the response variable *is_canceled* and other variables.
+Most of these informations come directly from the Exploratory Data Analysis, where we have assessed what is the relationship between *is_canceled* and some specific variables that will be of interest in the continuation of the analysis. For example, the variable *distribution_channel* has been shown to be strictly related to *market_segment* (nope, non lo mostriamo, lo notiamo direttamente dal dataset), since they have almost the same levels. Regarding the variable *deposite_type*, we saw that the impact on the cancellation was very high, also in a counterintuitive way (in the already discussed non refundable case). We want now to verify all these intuitions given by the previous exploratory analysis with the Chi-squared test.
+We start from the couple *is_canceled*/*market_segment*:
+
+```{r warning=FALSE}
+
+attach(hotel_bookings_new)
+ct_ms <-table(is_canceled, market_segment)
+kable(ct_ms)
+```
+
+```{r warning=FALSE}
+test_ms <-chisq.test(ct_ms)
+corrplot(test_ms$residuals, is.cor = FALSE)
+```
+
+
+A second case is that of *is_canceled*/*deposite_type*:
+
+```{r warning=FALSE}
+
+attach(hotel_bookings_new)
+ct_dt <-table(is_canceled, deposit_type)
+kable(ct_dt)
+```
+
+```{r warning=FALSE}
+test_dt <-chisq.test(ct_dt)
+corrplot(test_dt$residuals, is.cor = FALSE)
+```
+
+
+The analysis seems to be a confirmation of what we have understood from the exploratory analysis.
+
+Another thing to be noticed is that *reservation_status* is clearly a redundant variable, since it is exactly the same as *is_canceled*.
+Furthermore a Chi-square test is conducted on the variable *arrival_date_month*, because it is a multilevel categorical variable that shows a large number of levels (12) with respect to the others. It is he only time variable we will use in the definition of the predictive model (since it is in our view the most relevant one according to the aim of this project, while informations about days of arrival are too specific and that about year of arrival too generic). For these reasons particular attention has been paid to it.
+
+```{r warning=FALSE}
+
+hotel_bookings_new <-
+  hotel_bookings_new %>% 
+  mutate(arrival_date_month = factor(
+    arrival_date_month,
+    levels = c(
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ),
+    ordered = TRUE
+  ))
+attach(hotel_bookings_new)
+
+ct<-table(is_canceled, arrival_date_month)
+kable(ct)
+```
+
+```{r warning=FALSE}
+test <-chisq.test(ct)
+corrplot(test$residuals, is.cor = FALSE)
+```
+
 
 ## Models
+
+Starting from the informations provided by the initial dataset, a first logistic regression model has been implemented, after removing variables with too many missing values (*agent* and *company*, as stated before). We already pointed out in the previous section that some other variables tend to be redundant; this is the case of *market_segment* and *reservation_status*: for this reason they are discarded from the further analysis.
+All the remaining variables are included in the initial model, which is called the *complete model*. At this point it’s important to emphasize that a variable has been added artificially to the dataset: it is *total_stays*, which is the sum of two variables in the dataset, *stays_in_weekend_nights* and *stays_in_week_nights* and it represents the total duration of the client’s stay.
+
+Since most of the variables we are dealing with are categorical, the function *lm* (i.e. linear model) provided by *r* had to be replaced with the more general *glm* (i.e. generalized linear model). As argument, the hyper-parameter *family* was set to “binomial”, because the response variable *is_canceled* is binary (values: 0,1).
 
 ```{r, warning=FALSE}
 complete_model<-glm(is_canceled~hotel+lead_time+reservation_status_date+arrival_date_month+total_stays+adults+children+babies+meal+distribution_channel+is_repeated_guest+adr+previous_cancellations+previous_bookings_not_canceled+booking_changes+deposit_type+days_in_waiting_list+customer_type+required_car_parking_spaces+total_of_special_requests,  family="binomial")
 summary(complete_model)
+```
+
+
+The model output shows that most of the variables are significant, but some of them, like *children*, *babies* and *required_car_parking_space*, are surprisingly not significant, which means that the number of children or babies and the presence of a car parking are not relevant, in this linear model, in order to predict if a customer will cancel the reservation.
+We can compute the confusion matrix:
+
+```{r, warning=FALSE}
+logistic.prob_complete <- predict(complete_model, type="response")
+logistic.pred_complete <- rep(0, length(logistic.prob_complete))
+logistic.pred_complete[logistic.prob_complete > 0.5] <- 1
+table(logistic.pred_complete, hotel_bookings_new$is_canceled)
+```
+
+
+And finally the ROC curve:
+
+```{r}
+# ROC Curve
+
+roc.out_complete <- roc(hotel_bookings_new$is_canceled, logistic.prob_complete, levels=c(0, 1)) 
+plot(roc.out_complete,  print.auc=TRUE, legacy.axes=TRUE, xlab="False positive rate", ylab="True positive rate", col="red") 
+```
+
+
+At the beginning the idea was to use the function *regsubset* to perform model selection, but we soon find a serious problem: this function splits categorical variables in their levels and treats each of them as a dummy variable, which means that one of the levels could be found significant and then kept, while other levels of the same variable could be discarded. This is a serious issue when working with categorical variables. A good solution could be to use methods such as *force.in* or *force.out* to force some variables to be entirely in the model or entirely discarded. This strategy was not really helpful in this case, where almost all the variables are categorical and the use of such a method would drove us to hold them all, since at least some of levels for each variable turned out to be significant. It was also not clear how to perform the selection manually, since *glm* function does not return rates like *R* or the adjusted *R^2*.
+
+So we decided to implement the function *stepAIC*, that takes as input the complete model and adds or removes progressively variables according to the hyper-parameter *direction* (typical values are *backward*, *forward* or *both*) so to try different combinations of predictors. The *direction* value was set to *both* (i.e. both *forward* and *backward*). The *stepAIC* function computes for each submodes the AIC, which is an estimator of prediction error and finally returns the model with the lowest AIC at each iteration and the correspondent AIC value.
+
+```{r warning=FALSE}
 model_AIC<-stepAIC(complete_model, direction = "both")
 ```
 
-### AUC Curve
+
+The best model in our analysis turned out to be the complete model without *babies*, which fits in perfectly with the fact that *babies* has been recognized as non-significative in the first regression we performed on the complete model.
+We can see from the results that the difference in terms of AIC among the complete model and the one retrieved by the *stepAIC* function is minimal:
+
+AIC_complete = 104011.4
+AIC_not-babies = 104009.8
+
+For an assessment of the models the AUC parameter has been chosen. This is an acronym for Area Under Curve and it provides a view on the overall performance of a classifier, summarized over all possible thresholds. The curve we refer to in this description is the ROC, that allows us to display the True Positive Rates (also called *Sensitivity*) and the False Positive Rates for all possible thresholds.
+
+```{r, warning=FALSE}
+logistic.prob_AIC=predict(model_AIC, type="response")
+logistic.pred_AIC <- rep(0, length(logistic.prob_AIC))
+logistic.pred_AIC[logistic.prob_complete > 0.5] <- 1
+table(logistic.pred_AIC, hotel_bookings_new$is_canceled)
+```
+
+
+As can be seen from the plot, the ROC curve is almost exactly the same for our best models, which are the complete model and the complete one without babies. All the other curves corresponding to different models checked by the *stepAIC* function turn out to have a smaller AUC value, which implies a worse overall performance.
+An important remark is that AIC rate generally favors models with less variables. For this reason, even if in the end the two models are equivalent, the one without *babies* is to be preferred according to AIC rate.
+
 ```{r}
+# ROC Curve
+
 logistic.prob_AIC=predict(model_AIC, type="response")
 roc.out_AIC <- roc(hotel_bookings_new$is_canceled, logistic.prob_AIC, levels=c(0, 1)) 
 plot(roc.out_AIC,  print.auc=TRUE, legacy.axes=TRUE, xlab="False positive rate", ylab="True positive rate", col="red") 
   
 ```
-### Logistic VS LDA VS QDA
-```{r}
-#Train & Test
-set.seed(321)
-trainIndex <- createDataPartition(little_data$is_canceled,p=0.75,list=FALSE)
-hotel_data_train=little_data[trainIndex,]
-hotel_data_test=little_data[-trainIndex,]
-is_canc_test=hotel_data_test$is_canceled
-```
 
-
-```{r}
-#Logistic Regression
-glm.fits <- glm(is_canceled~lead_time+adr+total_of_special_requests,data=hotel_data_train,family=binomial)
-glm.probs <- predict(glm.fits,hotel_data_test,type="response")
-glm.pred <- rep(0,29847)
-glm.pred[glm.probs>.5] <- 1
-
-#Evaluation
-confusionMatrix(as.factor(glm.pred),is_canc_test)
-cat("Mean error is:", mean(glm.pred!=is_canc_test))
-```
-
-```{r}
-#Polinomial Regression
-glm.fits <- glm(is_canceled~lead_time+adr+total_of_special_requests+I(adr^3)+I(lead_time^2)+I(total_of_special_requests^2),data=hotel_data_train,family=binomial)
-glm.probs <- predict(glm.fits,hotel_data_test,type="response")
-glm.pred <- rep(0,29847)
-glm.pred[glm.probs>.5] <- 1
-
-#Evaluation
-confusionMatrix(as.factor(glm.pred),is_canc_test)
-cat("Mean error is:", mean(glm.pred!=is_canc_test))
-```
-
-```{r}
-#LDA
-lda.fit <- lda(is_canceled~lead_time+adr+total_of_special_requests,data=hotel_data_train)
-par(mar=c(1,1,1,1))
-plot(lda.fit)
-lda.pred <- predict(lda.fit, hotel_data_test)
-lda.class <- lda.pred$class
-
-#Evaluation
-confusionMatrix(as.factor(lda.class),is_canc_test)
-cat("Mean error is:", mean(glm.pred!=is_canc_test))
-```
-
-```{r}
-#QDA
-qda.fit <- qda(is_canceled~lead_time+adr+total_of_special_requests,data=hotel_data_train)
-qda.pred <- predict(qda.fit, hotel_data_test)
-qda.class <- qda.pred$class
-
-
-# Evaluation
-confusionMatrix(as.factor(qda.class),is_canc_test)
-cat("Mean error is:", mean(glm.pred!=is_canc_test))
-```
 
 ### LASSO
 
@@ -743,3 +988,64 @@ confusionMatrix(as.factor(predicted.classes), observed.classes)
 
 ```
 
+
+
+### Logistic VS LDA VS QDA
+```{r}
+#Train & Test
+set.seed(321)
+trainIndex <- createDataPartition(little_data$is_canceled,p=0.75,list=FALSE)
+hotel_data_train=little_data[trainIndex,]
+hotel_data_test=little_data[-trainIndex,]
+is_canc_test=hotel_data_test$is_canceled
+```
+
+
+```{r}
+#Logistic Regression
+glm.fits <- glm(is_canceled~lead_time+adr+total_of_special_requests,data=hotel_data_train,family=binomial)
+glm.probs <- predict(glm.fits,hotel_data_test,type="response")
+glm.pred <- rep(0,29847)
+glm.pred[glm.probs>.5] <- 1
+
+#Evaluation
+confusionMatrix(as.factor(glm.pred),is_canc_test)
+cat("Mean error is:", mean(glm.pred!=is_canc_test))
+```
+
+```{r}
+#Polinomial Regression
+glm.fits <- glm(is_canceled~lead_time+adr+total_of_special_requests+I(adr^3)+I(lead_time^2)+I(total_of_special_requests^2),data=hotel_data_train,family=binomial)
+glm.probs <- predict(glm.fits,hotel_data_test,type="response")
+glm.pred <- rep(0,29847)
+glm.pred[glm.probs>.5] <- 1
+
+#Evaluation
+confusionMatrix(as.factor(glm.pred),is_canc_test)
+cat("Mean error is:", mean(glm.pred!=is_canc_test))
+```
+
+```{r}
+#LDA
+lda.fit <- lda(is_canceled~lead_time+adr+total_of_special_requests,data=hotel_data_train)
+par(mar=c(1,1,1,1))
+plot(lda.fit)
+lda.pred <- predict(lda.fit, hotel_data_test)
+lda.class <- lda.pred$class
+
+#Evaluation
+confusionMatrix(as.factor(lda.class),is_canc_test)
+cat("Mean error is:", mean(glm.pred!=is_canc_test))
+```
+
+```{r}
+#QDA
+qda.fit <- qda(is_canceled~lead_time+adr+total_of_special_requests,data=hotel_data_train)
+qda.pred <- predict(qda.fit, hotel_data_test)
+qda.class <- qda.pred$class
+
+
+# Evaluation
+confusionMatrix(as.factor(qda.class),is_canc_test)
+cat("Mean error is:", mean(glm.pred!=is_canc_test))
+```
