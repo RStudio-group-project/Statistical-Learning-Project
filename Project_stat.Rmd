@@ -25,6 +25,7 @@ library(knitr)
 library(corrplot)
 library(glmnet)
 library(plotly)
+library(pROC)
 
 ```
 
@@ -995,9 +996,9 @@ confusionMatrix(y.test, as.factor(predicted.classes))
 ```{r}
 #Train & Test
 set.seed(321)
-trainIndex <- createDataPartition(little_data$is_canceled,p=0.75,list=FALSE)
-hotel_data_train=little_data[trainIndex,]
-hotel_data_test=little_data[-trainIndex,]
+trainIndex <- createDataPartition(hotel_bookings_new$is_canceled,p=0.75,list=FALSE)
+hotel_data_train=hotel_bookings_new[trainIndex,]
+hotel_data_test=hotel_bookings_new[-trainIndex,]
 is_canc_test=hotel_data_test$is_canceled
 ```
 
