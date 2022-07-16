@@ -227,7 +227,7 @@ fig_country <- fig_country %>% layout(title = "Country plot")
 fig_country
 ```
 
-The following plot points out the difference between the two kind of hotels, since most of the reservations related to the City Hotel last approximately 2-3 nights, while in case of the Resort Hotel (come prima) the same pattern is still observed, but in the meantime also 7 nights stand out as being a very popular choice among guests. More in general a long stay is very unusual in case of City Hotels.
+The following plot points out the difference between the two kind of hotels, since most of the reservations related to the City Hotel last approximately 2-3 nights, while in case of the Resort Hotel the same pattern is still observed, but in the meantime also 7 nights stand out as being a very popular choice among guests. More in general a long stay is very unusual in case of the City Hotel.
 
 ```{r warning=FALSE}
 # Length of stays in night
@@ -247,58 +247,7 @@ ggplot(hotel_bookings_new, aes(x=total_stays, fill = hotel)) +
 
 
 The dataset comprehends observations from three years, between the 1st of July of 2015 and the 31st of August 2017, including bookings that effectively arrived and bookings that were canceled. Another information provided by the dataset is the month of arrival, which allows us to take a look at the pattern of the booking curves month by month.
-
-Total bookings considering both canceled and not canceled
-Total guests considering only is_canceled==0
-
-
-```{r}
-# Total bookings for each hotel by month of arrival date
-
-df_months_City <- as.data.frame(hotel_bookings_new[hotel_bookings_new$hotel=='City Hotel', 
-                                                   c( "arrival_date_month")])
-
-df_months_Resort <- as.data.frame(hotel_bookings_new[hotel_bookings_new$hotel=='Resort Hotel', 
-                                                     c( "arrival_date_month")])
-
-df_months_City <- as.data.frame(lapply(df_months_City, function(x) as.data.frame(table(x))))
-
-df_months_Resort <- as.data.frame(lapply(df_months_Resort, function(x) as.data.frame(table(x))))
-
-colnames(df_months_City) <- c("arrival_date_month_City", "frequency_City" )
-
-colnames(df_months_Resort) <- c("arrival_date_month_Resort", "frequency_Resort")
-
-df_months_City$arrival_date_month_City <- factor(df_months_City$arrival_date_month_City, 
-          levels = c("January", "February", "March","April", "May", "June", "July", 
-                     "August", "September", "October", "November", "December"))
-
-df_months_Resort$arrival_date_month_Resort <- factor(df_months_Resort$arrival_date_month_Resort, 
-          levels = c("January", "February", "March","April", "May", "June", "July", 
-                     "August", "September", "October", "November", "December"))
-
-
-fig_months <- plot_ly()
-
-fig_months <- fig_months %>% add_lines(data=df_months_City, 
-                                       x = ~arrival_date_month_City, y = ~frequency_City, 
-                                       name = 'City Hotel', type = 'scatter', mode = 'lines', 
-                                       line = list(color = 'rgb((239,115,101))', width = 4))
-
-fig_months <- fig_months %>% add_lines(data=df_months_Resort, x = ~arrival_date_month_Resort, 
-                                       y = ~frequency_Resort, name = 'Resort Hotel', 
-                                       type = 'scatter', mode = 'lines', 
-                                       line = list(color = 'rgb((251,210,108))', width = 4)) 
-
-fig_months <- fig_months %>% 
-layout(title = "Total bookings for each hotel by month of arrival date",
-         xaxis = list(title = "Months"),
-         yaxis = list (title = "Total bookings"))
-
-fig_months
-```
-
-For each year 
+We first made the plot, for each year, of total bookings by month of arrival date, separating the two types of hotels.
 
 
 ```{r}
@@ -459,66 +408,7 @@ fig_months_2017
 ```
 
 
-In the plot of 2016 (avevamo detto di non sottolineare Giugno ma di parlare dell’andamento del periodo estivo) a strange behavior is displayed and we can detect a drop in the number of bookings during summertime. Therefore we decided to make a plot with the number of guests for each month and the result is a graph where this value seems to be higher during summertime, which is what we expected.
-
-Total guests
-
-```{r}
-# Total guests for each hotel by month
-
-df_City <- as.data.frame(hotel_bookings_new[hotel_bookings_new$is_canceled==0 & 
-                         hotel_bookings_new$hotel=='City Hotel', 
-                         c( "arrival_date_month", "total_stays", "adults", 
-                            "children", "babies")])
-
-df_guests_City <- df_City %>%
-  group_by(arrival_date_month) %>%
-  summarise(guests = sum(total_stays*(adults+children+babies))) %>%
-  ungroup() 
-
-df_Resort <- as.data.frame(hotel_bookings_new[hotel_bookings_new$is_canceled==0 & 
-                                              hotel_bookings_new$hotel=='Resort Hotel', 
-                                              c( "arrival_date_month", "total_stays", 
-                                                 "adults", "children", "babies")])
-
-df_guests_Resort <- df_Resort %>%
-  group_by(arrival_date_month) %>%
-  summarise(guests = sum(total_stays*(adults+children+babies))) %>%
-  ungroup() 
-
-
-df_guests_City$arrival_date_month <- factor(df_guests_City$arrival_date_month, 
-          levels = c("January", "February", "March","April", "May", "June", "July", 
-                     "August", "September", "October", "November", "December"))
-
-df_guests_Resort$arrival_date_month <- factor(df_guests_Resort$arrival_date_month, 
-          levels = c("January", "February", "March","April", "May", "June", "July", 
-                     "August", "September", "October", "November", "December"))
-
-
-fig_guests <- plot_ly()
-
-fig_guests <- fig_guests %>% add_lines(data=df_guests_City, x = ~arrival_date_month, 
-                                       y = ~guests, name = 'City Hotel', 
-                                       type = 'scatter', mode = 'lines',
-                                       line = list(color = 'rgb((239,115,101))', 
-                                                   width = 4))
-
-fig_guests <- fig_guests %>% add_lines(data=df_guests_Resort, x = ~arrival_date_month, 
-                                       y = ~guests, name = 'Resort Hotel', 
-                                       type = 'scatter', mode = 'lines', 
-                                       line = list(color = 'rgb((251,210,108))', 
-                                                   width = 4)) 
-
-fig_guests <- fig_guests %>% layout(
-         title = "Total guests for each hotel by month of arrival date",
-         xaxis = list(title = "Months"),
-         yaxis = list (title = "Total guests"))
-
-fig_guests
-
-```
-
+In the plot of 2016 a strange behavior is displayed: in the summertime period we expected to find a high number of bookings, however from the graph we can see a slight decrease. Therefore we decided to make the same kind of plots as before, but analyzing the total number of guests in the hotel over the various months, rather than the total number of reservations. From the plots below, we can clearly see that in the summer period of 2016 there is the highest number of guests present compared to the rest of the year, thus showing in effect that the two hotels host more people between July and August. 
 
 
 ```{r}
@@ -584,8 +474,6 @@ fig_guests_2015
 ```
 
 
-
-
 ```{r}
 # Total guests for each hotel by month (year: 2016)
 
@@ -644,7 +532,6 @@ fig_guests_2016
 ```
 
 
-
 ```{r}
 # Total guests for each hotel by month (year: 2017)
 
@@ -701,8 +588,113 @@ fig_guests_2017 <- fig_guests_2017 %>% layout(
 fig_guests_2017
 ```
 
+We finally compared also the total bookings and the total guests, considering all the observations. We can notice, looking at the following plots, that the behavior that we observed and analyzed above for the 2016 is not evident.
 
-Taking a look at the other variables we spent a few time in the analysis of the features *reserved_room_type* and *assigned_room_type* to understand what are the differences among them.
+
+```{r}
+# Total bookings for each hotel by month of arrival date
+
+df_months_City <- as.data.frame(hotel_bookings_new[hotel_bookings_new$hotel=='City Hotel', 
+                                                   c( "arrival_date_month")])
+
+df_months_Resort <- as.data.frame(hotel_bookings_new[hotel_bookings_new$hotel=='Resort Hotel', 
+                                                     c( "arrival_date_month")])
+
+df_months_City <- as.data.frame(lapply(df_months_City, function(x) as.data.frame(table(x))))
+
+df_months_Resort <- as.data.frame(lapply(df_months_Resort, function(x) as.data.frame(table(x))))
+
+colnames(df_months_City) <- c("arrival_date_month_City", "frequency_City" )
+
+colnames(df_months_Resort) <- c("arrival_date_month_Resort", "frequency_Resort")
+
+df_months_City$arrival_date_month_City <- factor(df_months_City$arrival_date_month_City, 
+          levels = c("January", "February", "March","April", "May", "June", "July", 
+                     "August", "September", "October", "November", "December"))
+
+df_months_Resort$arrival_date_month_Resort <- factor(df_months_Resort$arrival_date_month_Resort, 
+          levels = c("January", "February", "March","April", "May", "June", "July", 
+                     "August", "September", "October", "November", "December"))
+
+
+fig_months <- plot_ly()
+
+fig_months <- fig_months %>% add_lines(data=df_months_City, 
+                                       x = ~arrival_date_month_City, y = ~frequency_City, 
+                                       name = 'City Hotel', type = 'scatter', mode = 'lines', 
+                                       line = list(color = 'rgb((239,115,101))', width = 4))
+
+fig_months <- fig_months %>% add_lines(data=df_months_Resort, x = ~arrival_date_month_Resort, 
+                                       y = ~frequency_Resort, name = 'Resort Hotel', 
+                                       type = 'scatter', mode = 'lines', 
+                                       line = list(color = 'rgb((251,210,108))', width = 4)) 
+
+fig_months <- fig_months %>% 
+layout(title = "Total bookings for each hotel by month of arrival date",
+         xaxis = list(title = "Months"),
+         yaxis = list (title = "Total bookings"))
+
+fig_months
+``` 
+
+
+```{r}
+# Total guests for each hotel by month
+
+df_City <- as.data.frame(hotel_bookings_new[hotel_bookings_new$is_canceled==0 & 
+                         hotel_bookings_new$hotel=='City Hotel', 
+                         c( "arrival_date_month", "total_stays", "adults", 
+                            "children", "babies")])
+
+df_guests_City <- df_City %>%
+  group_by(arrival_date_month) %>%
+  summarise(guests = sum(total_stays*(adults+children+babies))) %>%
+  ungroup() 
+
+df_Resort <- as.data.frame(hotel_bookings_new[hotel_bookings_new$is_canceled==0 & 
+                                              hotel_bookings_new$hotel=='Resort Hotel', 
+                                              c( "arrival_date_month", "total_stays", 
+                                                 "adults", "children", "babies")])
+
+df_guests_Resort <- df_Resort %>%
+  group_by(arrival_date_month) %>%
+  summarise(guests = sum(total_stays*(adults+children+babies))) %>%
+  ungroup() 
+
+
+df_guests_City$arrival_date_month <- factor(df_guests_City$arrival_date_month, 
+          levels = c("January", "February", "March","April", "May", "June", "July", 
+                     "August", "September", "October", "November", "December"))
+
+df_guests_Resort$arrival_date_month <- factor(df_guests_Resort$arrival_date_month, 
+          levels = c("January", "February", "March","April", "May", "June", "July", 
+                     "August", "September", "October", "November", "December"))
+
+
+fig_guests <- plot_ly()
+
+fig_guests <- fig_guests %>% add_lines(data=df_guests_City, x = ~arrival_date_month, 
+                                       y = ~guests, name = 'City Hotel', 
+                                       type = 'scatter', mode = 'lines',
+                                       line = list(color = 'rgb((239,115,101))', 
+                                                   width = 4))
+
+fig_guests <- fig_guests %>% add_lines(data=df_guests_Resort, x = ~arrival_date_month, 
+                                       y = ~guests, name = 'Resort Hotel', 
+                                       type = 'scatter', mode = 'lines', 
+                                       line = list(color = 'rgb((251,210,108))', 
+                                                   width = 4)) 
+
+fig_guests <- fig_guests %>% layout(
+         title = "Total guests for each hotel by month of arrival date",
+         xaxis = list(title = "Months"),
+         yaxis = list (title = "Total guests"))
+
+fig_guests
+
+```
+
+Taking a look at the other variables we spent a few time in the analysis of the features *reserved_room_type* and *assigned_room_type* to understand what are the differences among them. 
 
 ```{r}
 # Reserved room type table
@@ -711,6 +703,16 @@ table_hotel_reserved <- table(hotel_bookings_new$hotel,
                               hotel_bookings_new$reserved_room_type)
 table_hotel_reserved
 ```
+
+```{r}
+# Assigned room type table
+
+table_hotel_assigned <- table(hotel_bookings_new$hotel, 
+                              hotel_bookings_new$assigned_room_type)
+table_hotel_assigned
+```
+
+As we can see from the tables above, there are no city hotel (reserved and assigned) room of type *H* and *L*. Furthermore, looking at the assigned room table, we noticed that there are two room types, *I* for the resort hotel and *K* for the city hotel, which were not present in the reserved room table. 
 
 ```{r}
 # Reserved room type plot
@@ -733,13 +735,6 @@ fig_reserved <- fig_reserved %>% layout(title = "Reserved room type",
 fig_reserved
 ```
 
-```{r}
-# Assigned room type table
-
-table_hotel_assigned <- table(hotel_bookings_new$hotel, 
-                              hotel_bookings_new$assigned_room_type)
-table_hotel_assigned
-```
 
 ```{r}
 # Assigned room type plot
