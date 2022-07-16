@@ -229,7 +229,7 @@ df_hotel <- as.data.frame(lapply(df_hotel, function(x) as.data.frame(table(x))))
 
 colnames(df_hotel) <- c("hotel", "frequency")
 
-colors_donut <- c('rgb((119,51,68))','rgb((227,181,164))') 
+colors_donut <- c('rgb((239,115,101))','rgb((251,210,108))') 
 
 fig_hotel <- df_hotel %>% plot_ly(labels = ~hotel, values = ~frequency, 
                                   marker = list(colors = colors_donut,
