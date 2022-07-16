@@ -888,7 +888,7 @@ ggplot(data = hotel_bookings_new, aes(x=is_canceled, y=lead_time, fill=is_cancel
 ```
 
 
-This can be easily seen also by the density plot, where on the x-axis there is the lead_time and on y-axis the correspondent number of bookings for a specific lead_time. The plot shows both cancelled and not cancelled cases. The peak of the curve with respect to the not cancelled is higher e it occurs for a low value of lead_time, typically only 1 day. Both the distributions are clearly skewed, but the cancelled one stay higher than the other also for high values of lead_time, which means that the higher the time elapsed between the reservation and the arrival date the higher the risk of cancellation.
+This can be easily seen also by the density plot, where on the x-axis there is the lead_time and on y-axis the correspondent number of bookings for a specific lead_time. The plot shows both cancelled and not cancelled cases. The peak of the curve with respect to the not cancelled is higher e it occurs for a low value of lead_time, typically only 10 days. Both the distributions are clearly skewed, but the cancelled one stay higher than the other also for high values of lead_time, which means that the higher the time elapsed between the reservation and the arrival date the higher the risk of cancellation.
 
 
 ```{r warning=FALSE}
@@ -929,18 +929,16 @@ This seems to be a very weird behavior and it raises the question if there is so
 ```{r}
 hotel_bookings_new %>% group_by(deposit_type)  %>%
   summarise("Lead Time" = mean(lead_time),
-            "Is Repeated Guest" = mean(as.numeric(is_repeated_guest)-1),
             "Prev Canc" = mean(as.numeric(previous_cancellations)),
             "Adults" = mean(as.numeric(adults)),
             "Children" = mean(as.numeric(children)),
             "Babies" = mean(as.numeric(babies)),
-            "Required Parking" = mean(as.numeric(required_car_parking_spaces)),
             "Special Req" = mean(as.numeric(total_of_special_requests)),
             .groups = 'drop')
 ```
 
 
-We tried this kind of very superficial analysis in order to take a look at the differences between Non Refund and No Deposit, just to check if some specific pattern occurs among people who decide to cancel a non refundable reservation. The comparison shows the following: that Non Refund deposits are characterized by a *lead_time* which is twice as long as for No Deposit; that *is_repeated_guest* is about 1/10 with respect to No Deposit; that *previous_cancellations* is 10 times higher, that *children* and *babies* are very rare, that most of people are adults, and that *special_requests* are rare.
+We tried this kind of very superficial analysis in order to take a look at the differences between Non Refund and No Deposit, just to check if some specific pattern occurs among people who decide to cancel a non refundable reservation. The comparison shows the following: that Non Refund deposits are characterized by a *lead_time* which is twice as long as for No Deposit; that *previous_cancellations* is 10 times higher, that *children* and *babies* are very rare, that most of people are adults, and that *special_requests* are rare.
 
 Based on these very superficial analysis it seems that people who cancelled non refundable reservations are especially adults, with very few special requests. The booking occurs on average long before the arrival and it’s rare that a specific guest returns to the same hotel. Anyway, if it happens, he will repeatedly cancel the reservation, which is quite a strange behavior.
 
