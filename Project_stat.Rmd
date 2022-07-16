@@ -1,7 +1,6 @@
 ---
-title: "Project_stat"
+title: "Statistical Learning project: Hotel booking demand"
 author: "I.Caria, C.De Luca, M.Pernini"
-date: "13/06/2022"
 output:
   pdf_document: default
   html_document: default
@@ -12,7 +11,6 @@ editor_options:
 # Libraries
 
 ```{r message=FALSE, warning=FALSE}
-
 library(ggplot2)
 library(tidyverse)
 library(leaps)
@@ -27,7 +25,7 @@ library(glmnet)
 library(plotly)
 library(pROC)
 library(countrycode)
-
+library(confintr)
 ```
 
 
@@ -1012,7 +1010,7 @@ dfc.cancelation %>%
   geom_bar(position = "dodge", stat = "identity")  +
   labs(title = "Canceled vs Non Canceled Bookings by Customer Type", 
        x = "Customer Type", y = "count") +
-  scale_fill_manual(values=c("#7fd8be", "#d87f99"))
+  scale_fill_manual(values=c("#7fd8be", "#d87f99")) + theme_bw()
 
 ```
 
@@ -1158,6 +1156,10 @@ canceled_market
 cs_market <-chisq.test(canceled_market, correct = FALSE)
 cs_market
 ```
+```{r}
+# Cramer's V is_canceled - market segment
+cramersv(cs_market)
+```
 
 A second case is that of *is_canceled*/*deposite_type*:
 
@@ -1170,10 +1172,14 @@ canceled_deposit
 ```
 
 ```{r warning=FALSE}
-# Chi-square is_canceled - market segment
+# Chi-square is_canceled - deposite_type
 
 cs_deposit <-chisq.test(canceled_deposit, correct = FALSE)
 cs_deposit
+```
+```{r}
+# Cramer's V is_canceled - market segment
+cramersv(cs_deposit)
 ```
 
 Furthermore a Chi-square test is conducted on the variable *arrival_date_month*, because it is a multilevel categorical variable that shows a large number of levels (12) with respect to the others. It is he only time variable we will use in the definition of the predictive model (since it is in our view the most relevant one according to the aim of this project, while informations about days of arrival are too specific and that about year of arrival too generic). For these reasons particular attention has been paid to it.
@@ -1192,7 +1198,10 @@ canceled_month
 cs_month <-chisq.test(canceled_month, correct = FALSE)
 cs_month
 ```
-
+```{r}
+# Cramer's V is_canceled - arrival_date_month
+cramersv(cs_month)
+```
 
 In all these three cases considered above, the value is really close to zero, which means that our variables are very unlikely to be completely un-associated in some population. However, this does not mean the variables are strongly associated; a weak association in a large sample size may also result in a p-value close to zero. Furthermore, we know that when Cramer's V is 0, it indicates no association between the two variables, while Cramer's V equal to 1 means a strong association; in the intermediate cases it is difficult to interpret, because the value also depends on the size of table and many other things. For these reasons, since in the particular case of 2x2 tables there exist other association measures, we considered them.
 
@@ -1288,7 +1297,7 @@ odds_ratio_g
 Qg <- (odds_ratio_g-1) / (odds_ratio_g+1)
 Qg
 ```
-
+We know that relative risk equal to 1 means independence between the two variables; in our cases we obtained 0.8216511 for the is_canceled - hotel couple and 0.9687478 for is_canceled - is_repeated_guest. We then calculated the Odds ratio, for which we know that it is equal to 1 iff the variables are independent and finally we considered the Yule's Q, which is a way to rewrite the Odds ratio, in order to obtain values between -1 and 1, which makes it the most similar measure to the correlation one.
 
 # Models
 
@@ -1315,7 +1324,8 @@ We can compute the confusion matrix:
 logistic.prob_complete <- predict(complete_model, type="response")
 logistic.pred_complete <- rep(0, length(logistic.prob_complete))
 logistic.pred_complete[logistic.prob_complete > 0.5] <- 1
-confusionMatrix(as.factor(logistic.pred_complete), hotel_bookings_new$is_canceled)
+confusionMatrix(as.factor(logistic.pred_complete), 
+                hotel_bookings_new$is_canceled)
 ```
 
 
@@ -1449,7 +1459,8 @@ confusionMatrix(y.test, as.factor(predicted.classes))
 ```{r}
 #Train & Test
 set.seed(321)
-trainIndex <- createDataPartition(hotel_bookings_new$is_canceled,p=0.75,list=FALSE)
+trainIndex <- createDataPartition(hotel_bookings_new$is_canceled,
+                                  p=0.75,list=FALSE)
 hotel_data_train=hotel_bookings_new[trainIndex,]
 hotel_data_test=hotel_bookings_new[-trainIndex,]
 is_canc_test=hotel_data_test$is_canceled
@@ -1485,7 +1496,8 @@ cat("Mean error is:", mean(glm.pred!=is_canc_test))
 
 ```{r}
 #LDA
-lda.fit <- lda(is_canceled~lead_time+adr+total_of_special_requests,data=hotel_data_train)
+lda.fit <- lda(is_canceled~lead_time+adr+total_of_special_requests,
+               data=hotel_data_train)
 par(mar=c(1,1,1,1))
 plot(lda.fit)
 lda.pred <- predict(lda.fit, hotel_data_test)
@@ -1498,7 +1510,8 @@ cat("Mean error is:", mean(glm.pred!=is_canc_test))
 
 ```{r}
 #QDA
-qda.fit <- qda(is_canceled~lead_time+adr+total_of_special_requests,data=hotel_data_train)
+qda.fit <- qda(is_canceled~lead_time+adr+total_of_special_requests,
+               data=hotel_data_train)
 qda.pred <- predict(qda.fit, hotel_data_test)
 qda.class <- qda.pred$class
 
