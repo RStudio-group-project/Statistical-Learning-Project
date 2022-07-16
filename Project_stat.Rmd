@@ -757,6 +757,36 @@ fig_assigned <- fig_assigned %>% layout(title = "Assigned room type",
 fig_assigned
 ```
 
+We want now to focus our analysis on the variable *is_canceled*. We first notice that the two classes are quite unbalanced:
+
+```{r}
+table(hotel_bookings_new$is_canceled)
+```
+
+
+This can be easily seen also on a donut plot:
+
+
+```{r warning=FALSE}
+# Cancellations donut plot
+df_canc <- as.data.frame(hotel_bookings_new[, c("is_canceled")])
+df_canc <- as.data.frame(lapply(df_canc, function(x) as.data.frame(table(x))))
+colnames(df_canc) <- c("is_canceled", "frequency")
+df_canc
+colors_donut_canc <- c('rgb(127,216,190)','rgb(216,127,153)') 
+fig_canc <- df_canc %>% plot_ly(labels = c('not canceled','canceled' ), values = ~frequency, 
+                                  marker = list(colors = colors_donut_canc,
+                                  line = list(color = '#FFFFFF', width = 1)))
+fig_canc <- fig_canc %>% add_pie(hole = 0.6)
+fig_canc <- fig_canc %>% layout(title = "Total number of canceled and not canceled bookings",  
+                      showlegend = T,
+                      xaxis = list(showgrid = FALSE, zeroline = FALSE,
+                                   showticklabels = FALSE),
+                      yaxis = list(showgrid = FALSE, zeroline = FALSE,
+                                   showticklabels = FALSE))
+fig_canc
+```
+
 
 The following boxplot shows how cancelations in City and Resort hotel are related to lead_time. We remind here that lead time is the time that elapsed between the day when the booking was made and the actual day of checking-in. We can see that that the median on lead time from cancelled and not cancelled is different and both in City and in Resort Hotel this value is lower in case of cancellation, which means that cancellation usually occurs quite soon after booking. The chances of cancellation are less if sufficient time has elapsed from the date of booking.
 
@@ -793,38 +823,6 @@ ggplot(hotel_bookings_new, aes(x = lead_time, fill = is_canceled)) +
   xlim(0,500) +
   theme_bw() + theme(legend.position = "top")
 ```
-
-
-We want now to focus our analysis on the variable *is_canceled*. We first notice that the two classes are quite unbalanced:
-
-```{r}
-table(hotel_bookings_new$is_canceled)
-```
-
-
-This can be easily seen also on a donut plot:
-
-
-```{r warning=FALSE}
-# Cancellations donut plot
-df_canc <- as.data.frame(hotel_bookings_new[, c("is_canceled")])
-df_canc <- as.data.frame(lapply(df_canc, function(x) as.data.frame(table(x))))
-colnames(df_canc) <- c("is_canceled", "frequency")
-df_canc
-colors_donut_canc <- c('rgb(127,216,190)','rgb(216,127,153)') 
-fig_canc <- df_canc %>% plot_ly(labels = c('not canceled','canceled' ), values = ~frequency, 
-                                  marker = list(colors = colors_donut_canc,
-                                  line = list(color = '#FFFFFF', width = 1)))
-fig_canc <- fig_canc %>% add_pie(hole = 0.6)
-fig_canc <- fig_canc %>% layout(title = "Total number of canceled and not canceled bookings",  
-                      showlegend = T,
-                      xaxis = list(showgrid = FALSE, zeroline = FALSE,
-                                   showticklabels = FALSE),
-                      yaxis = list(showgrid = FALSE, zeroline = FALSE,
-                                   showticklabels = FALSE))
-fig_canc
-```
-
 
 As stated before out of all the bookings, the majority of requests is for City Hotel (about 65% of the total bookings) and from the plot we can see that the percentage of confirmed status is higher than cancellations in both cases. In particular the ratio between canceled and not canceled is lower in case of Resort, which means that those who book a resort have a lower tendency to cancel their booking.
 
