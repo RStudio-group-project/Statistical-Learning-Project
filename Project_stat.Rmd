@@ -1302,6 +1302,7 @@ complete_model<-glm(is_canceled~hotel+lead_time+reservation_status_date+arrival_
 total_stays+adults+children+babies+meal+distribution_channel+is_repeated_guest+adr+
 previous_cancellations+previous_bookings_not_canceled+booking_changes+deposit_type+
 days_in_waiting_list+customer_type+required_car_parking_spaces+total_of_special_requests,
+data = hotel_bookings_new,
 family="binomial")
 summary(complete_model)
 ```
