@@ -1159,12 +1159,6 @@ cs_market <-chisq.test(canceled_market, correct = FALSE)
 cs_market
 ```
 
-```{r}
-# Cramer's V is_canceled - market segment
-
-cramersv(cs_market)
-```
-
 A second case is that of *is_canceled*/*deposite_type*:
 
 ```{r warning=FALSE}
@@ -1180,12 +1174,6 @@ canceled_deposit
 
 cs_deposit <-chisq.test(canceled_deposit, correct = FALSE)
 cs_deposit
-```
-
-```{r}
-# Cramer's V is_canceled - market segment
-
-cramersv(cs_deposit)
 ```
 
 Furthermore a Chi-square test is conducted on the variable *arrival_date_month*, because it is a multilevel categorical variable that shows a large number of levels (12) with respect to the others. It is he only time variable we will use in the definition of the predictive model (since it is in our view the most relevant one according to the aim of this project, while informations about days of arrival are too specific and that about year of arrival too generic). For these reasons particular attention has been paid to it.
@@ -1205,11 +1193,6 @@ cs_month <-chisq.test(canceled_month, correct = FALSE)
 cs_month
 ```
 
-```{r}
-# Cramer's V is_canceled - arrival_date_month
-
-cramersv(cs_month)
-```
 
 In all these three cases considered above, the value is really close to zero, which means that our variables are very unlikely to be completely un-associated in some population. However, this does not mean the variables are strongly associated; a weak association in a large sample size may also result in a p-value close to zero. Furthermore, we know that when Cramer's V is 0, it indicates no association between the two variables, while Cramer's V equal to 1 means a strong association; in the intermediate cases it is difficult to interpret, because the value also depends on the size of table and many other things. For these reasons, since in the particular case of 2x2 tables there exist other association measures, we considered them.
 
