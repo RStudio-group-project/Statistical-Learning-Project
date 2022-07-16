@@ -1434,6 +1434,8 @@ predicted.classes <- ifelse(ridge.pred > 0.5, "1", "0")
 confusionMatrix(y.test, as.factor(predicted.classes))
 ```
 
+Ridge Regression has a discrete performance on our data, with an accuracy of 0.7719. According to the respective Confusion Matrix, it is possible to notice that the Specificity is higher than Sensitivity with a very high score of 0.9808.
+
 ### LASSO
 
 ```{r}
@@ -1452,6 +1454,8 @@ predicted.classes <- ifelse(lasso.pred > 0.5, "1", "0")
 confusionMatrix(y.test, as.factor(predicted.classes))
 
 ```
+Lasso Regression shows similar results to Ridge. However, there is a little difference in accuracy, with a score of 0.7567. 
+In conclusion, Ridge ends up to be the best models.
 
 ### Logistic VS LDA VS QDA
 ```{r}
