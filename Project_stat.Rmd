@@ -26,6 +26,7 @@ library(corrplot)
 library(glmnet)
 library(plotly)
 library(pROC)
+library(countrycode)
 
 ```
 
@@ -757,74 +758,13 @@ fig_assigned <- fig_assigned %>% layout(title = "Assigned room type",
 fig_assigned
 ```
 
-We want now to focus our analysis on the variable *is_canceled*. We first notice that the two classes are quite unbalanced:
+We want now to focus our attention on the variable *is_canceled*. The first thing to notice is that it it a binary variable, that can take values 0 (i.e. not canceled) or 1 (i.e. canceled). The following donut plot clearly shows how much the variable is unbalanced, since the number of non-cancelled reservations is larger than the number of cancelled ones (the proportion is about 2:1). This must be highlighted, since it may have an impact on the results of the model we are going to build.
+
 
 ```{r}
 table(hotel_bookings_new$is_canceled)
 ```
 
-
-This can be easily seen also on a donut plot:
-
-
-```{r warning=FALSE}
-# Cancellations donut plot
-df_canc <- as.data.frame(hotel_bookings_new[, c("is_canceled")])
-df_canc <- as.data.frame(lapply(df_canc, function(x) as.data.frame(table(x))))
-colnames(df_canc) <- c("is_canceled", "frequency")
-df_canc
-colors_donut_canc <- c('rgb(127,216,190)','rgb(216,127,153)') 
-fig_canc <- df_canc %>% plot_ly(labels = c('not canceled','canceled' ), values = ~frequency, 
-                                  marker = list(colors = colors_donut_canc,
-                                  line = list(color = '#FFFFFF', width = 1)))
-fig_canc <- fig_canc %>% add_pie(hole = 0.6)
-fig_canc <- fig_canc %>% layout(title = "Total number of canceled and not canceled bookings",  
-                      showlegend = T,
-                      xaxis = list(showgrid = FALSE, zeroline = FALSE,
-                                   showticklabels = FALSE),
-                      yaxis = list(showgrid = FALSE, zeroline = FALSE,
-                                   showticklabels = FALSE))
-fig_canc
-```
-
-
-The following boxplot shows how cancelations in City and Resort hotel are related to lead_time. We remind here that lead time is the time that elapsed between the day when the booking was made and the actual day of checking-in. We can see that that the median on lead time from cancelled and not cancelled is different and both in City and in Resort Hotel this value is lower in case of cancellation, which means that cancellation usually occurs quite soon after booking. The chances of cancellation are less if sufficient time has elapsed from the date of booking.
-
-```{r warning=FALSE}
-# Boxplot to show cancellations based on lead_time
-ggplot(data = hotel_bookings_new, aes(x=is_canceled, y=lead_time, fill=is_canceled))+
-  geom_boxplot(position = position_dodge() ) +
-  labs(
-    title = "Cancellation By Hotel Type Based on Lead Time",
-    x = "Hotel Type",
-    y = "Lead Time (Days)"
-  ) +
-  scale_fill_manual(values=c("#7fd8be", "#d87f99"),
-    name = "Booking Status",
-    breaks = c("0", "1"),
-    labels = c("Not Cancelled","Cancelled" )
-  ) + theme_bw() +
-  facet_wrap(~hotel)
-```
-
-
-All these things can be shown also by the density plot:
-
-```{r warning=FALSE}
-ggplot(hotel_bookings_new, aes(x = lead_time, fill = is_canceled)) + 
-  geom_histogram(aes(y = ..density..), position = position_dodge(), binwidth = 20 ) +
-  geom_density(alpha = 0.2) + 
-  labs(title = "Average Daily rate by Hotel",
-       x = "Lead Time",
-       y = "Count") + scale_fill_manual(values=c("#7fd8be", "#d87f99"),
-    name = "Booking Status",
-    breaks = c("0", "1"),
-    labels = c("Not Cancelled","Cancelled" )) + 
-  xlim(0,500) +
-  theme_bw() + theme(legend.position = "top")
-```
-
-As stated before out of all the bookings, the majority of requests is for City Hotel (about 65% of the total bookings) and from the plot we can see that the percentage of confirmed status is higher than cancellations in both cases. In particular the ratio between canceled and not canceled is lower in case of Resort, which means that those who book a resort have a lower tendency to cancel their booking.
 
 ```{r warning=FALSE}
 # Percentage of cancellations for hotel type
@@ -855,6 +795,69 @@ ggplot(data = hotel_bookings_new,
 ```
 
 
+As stated before out of all the bookings, the majority of requests is for City Hotel (about 65% of the total bookings) and from the plot we can see that the percentage of confirmed status is higher than cancellations in both cases. In particular the ratio between canceled and not canceled is lower in case of Resort, which means that those who book a resort have a lower tendency to cancel their booking.
+
+
+```{r warning=FALSE}
+# Cancellations donut plot
+df_canc <- as.data.frame(hotel_bookings_new[, c("is_canceled")])
+df_canc <- as.data.frame(lapply(df_canc, function(x) as.data.frame(table(x))))
+colnames(df_canc) <- c("is_canceled", "frequency")
+df_canc
+colors_donut_canc <- c('rgb(127,216,190)','rgb(216,127,153)') 
+fig_canc <- df_canc %>% plot_ly(labels = c('not canceled','canceled' ), values = ~frequency, 
+                                  marker = list(colors = colors_donut_canc,
+                                  line = list(color = '#FFFFFF', width = 1)))
+fig_canc <- fig_canc %>% add_pie(hole = 0.6)
+fig_canc <- fig_canc %>% layout(title = "Total number of canceled and not canceled bookings",  
+                      showlegend = T,
+                      xaxis = list(showgrid = FALSE, zeroline = FALSE,
+                                   showticklabels = FALSE),
+                      yaxis = list(showgrid = FALSE, zeroline = FALSE,
+                                   showticklabels = FALSE))
+fig_canc
+```
+
+
+A first thing we want to study is the relation between cancellations and lead_time, which is the number of days that elapsed between the day of the booking and the arrival date or the eventual cancellation. The following boxplot shows the distribution of cancelled and not cancelled bookings for each hotel. We see at once that in both cases the median of cancelled is higher than for not cancelled: this means that among customers who do not cancel the booking, the majority prefer to book the room next to the day of arrival, while who books in advance (i.e. when lead time is larger) has a greater tendency to cancel the booking.
+
+
+```{r warning=FALSE}
+# Boxplot to show cancellations based on lead_time
+ggplot(data = hotel_bookings_new, aes(x=is_canceled, y=lead_time, fill=is_canceled))+
+  geom_boxplot(position = position_dodge() ) +
+  labs(
+    title = "Cancellation By Hotel Type Based on Lead Time",
+    x = "Hotel Type",
+    y = "Lead Time (Days)"
+  ) +
+  scale_fill_manual(values=c("#7fd8be", "#d87f99"),
+    name = "Booking Status",
+    breaks = c("0", "1"),
+    labels = c("Not Cancelled","Cancelled" )
+  ) + theme_bw() +
+  facet_wrap(~hotel)
+```
+
+
+This can be easily seen also by the density plot, where on the x-axis there is the lead_time and on y-axis the correspondent number of bookings for a specific lead_time. The plot shows both cancelled and not cancelled cases. The peak of the curve with respect to the not cancelled is higher e it occurs for a low value of lead_time, typically only 1 day. Both the distributions are clearly skewed, but the cancelled one stay higher than the other also for high values of lead_time, which means that the higher the time elapsed between the reservation and the arrival date the higher the risk of cancellation.
+
+
+```{r warning=FALSE}
+ggplot(hotel_bookings_new, aes(x = lead_time, fill = is_canceled)) + 
+  geom_histogram(aes(y = ..density..), position = position_dodge(), binwidth = 20 ) +
+  geom_density(alpha = 0.2) + 
+  labs(title = "Average Daily rate by Hotel",
+       x = "Lead Time",
+       y = "Count") + scale_fill_manual(values=c("#7fd8be", "#d87f99"),
+    name = "Booking Status",
+    breaks = c("0", "1"),
+    labels = c("Not Cancelled","Cancelled" )) + 
+  xlim(0,500) +
+  theme_bw() + theme(legend.position = "top")
+```
+
+
 The following result is very interesting: the plot shows the number of cancellations for different types of deposit that a customer can made to guarantee the booking. Most of the time no deposit is required, but the main observation here is that if the deposit is not recoverable the number of cancellations becomes way higher than the number of confirmed bookings. In the plot a log scaling was applied on the y-axis to better show the difference among cancellations in the Non Refundable case (without the scaling the number of non cancelled reservations was so small that it could be barely seen).
 
 ```{r warning=FALSE}
@@ -870,6 +873,176 @@ ggplot(hotel_bookings_new, aes(deposit_type, fill = is_canceled)) +
     breaks = c("0", "1"),
     labels = c("Not Cancelled", "Cancelled") ) + scale_y_continuous(trans='log2')
 ```
+
+
+This seems to be a very weird behavior and it raises the question if there is something wrong with the data. The following table shows mean values of the data, with respect to some specific features, grouped by *deposit_type*:
+
+
+```{r}
+hotel_bookings_new %>% group_by(deposit_type)  %>%
+  summarise("Lead Time" = mean(lead_time),
+            "Is Repeated Guest" = mean(as.numeric(is_repeated_guest)-1),
+            "Prev Canc" = mean(as.numeric(previous_cancellations)),
+            "Adults" = mean(as.numeric(adults)),
+            "Children" = mean(as.numeric(children)),
+            "Babies" = mean(as.numeric(babies)),
+            "Required Parking" = mean(as.numeric(required_car_parking_spaces)),
+            "Special Req" = mean(as.numeric(total_of_special_requests)),
+            .groups = 'drop')
+```
+
+
+We tried this kind of very superficial analysis in order to take a look at the differences between Non Refund and No Deposit, just to check if some specific pattern occurs among people who decide to cancel a non refundable reservation. The comparison shows the following: that Non Refund deposits are characterized by a *lead_time* which is twice as long as for No Deposit; that *is_repeated_guest* is about 1/10 with respect to No Deposit; that *previous_cancellations* is 10 times higher, that *children* and *babies* are very rare, that most of people are adults, and that *special_requests* are rare.
+
+Based on these very superficial analysis it seems that people who cancelled non refundable reservations are especially adults, with very few special requests. The booking occurs on average long before the arrival and it’s rare that a specific guest returns to the same hotel. Anyway, if it happens, he will repeatedly cancel the reservation, which is quite a strange behavior.
+
+The aim of this analysis was to find some insight to justify the weird situation we discussed above. Unfortunately the data we worked on do not give a good explanation. By doing a lot of research we found the paper *Big Data in Hotel Revenue Management: Exploring Cancellation Drivers to Gain Insights Into Booking Cancellation Behavior*, by Nuno Antonio, Ana Maria De Almeida and Luìs Nunes, who are the same authors of the paper where the hotel booking dataset is presented.
+They wrote: “As an example, through analysis of the “Nonrefundable” canceled bookings in some Asiatic countries and from certain distribution channels, it is possible to understand why so many “Nonrefundable” bookings are canceled. These bookings are usually made through OTA using false or invalid credit card details. These bookings are issued as support for requests for visas to enter the country (a hotel booking is mandatory for applying for a Portuguese entry visa). After failing to charge the customer’s credit card, the hotel identifies these bookings as “fake” and contacts the customer; however, during the time required to verify these bookings, they contribute negatively to demand forecast and demand-management decisions.”
+Therefore we decided to see if this explanation can be confirmed by data at our disposal. We first created a new Dataframe, starting from the original one, that contains only observations regarding customers who canceled a non refundable reservation, then we plotted the number of observation with respect to the continent (information regarding continents is not provided by the original dataframe, so we had to add it  thanks to the r function “countryside” provided by the homonymous library). 
+
+
+```{r warning=FALSE}
+dftemp1 <- data.frame(hotel_bookings_new)
+dftemp1$continent <- countrycode(hotel_bookings_new$country, "iso3c", "continent")
+
+dftemp2 <- dftemp1[(dftemp1$deposit_type=="Non Refund" & dftemp1$is_canceled==1),]
+ggplot(data = dftemp1,
+       aes(
+         x = continent,
+         fill = factor(continent)
+       )) + labs(title = "Number of bookings per Continent", x = "Continents", y = "count") +
+  geom_bar(col ="black",fill="#7fd8be") + theme_bw()
+```
+
+
+From the plot we can see that the majority of guests with the above characteristics come from Europe, which seems in contradiction with what the authors of the paper wrote. Pre also plotted a second graph to see what is the favorite distribution channel among the guests.
+
+
+```{r}
+ggplot(dftemp2, aes(distribution_channel)) + 
+  geom_bar(stat = "count", position = position_dodge(), col ="black",fill="#7fd8be") + 
+  labs(title = "Number of bookings for deposit type",
+       x = "distribution_channel",
+       y = "count") +
+  theme_bw() 
+```
+
+
+It turned out that Travel Agent/Tour Operator is the favorite distribution channel, which seems coherent with what the authors suggested. However it is a not conclusive result, since TA/TO remains the favorite distribution channel also on the whole dataset, as we can see from the plot below:
+
+
+```{r}
+ggplot(hotel_bookings_new, aes(distribution_channel)) + 
+  geom_bar(stat = "count", position = position_dodge(), col ="black",fill="#7fd8be") + 
+  labs(title = "Number of bookings for deposit type",
+       x = "distribution_channel",
+       y = "count") +
+  theme_bw() 
+```
+
+
+In the end, data at our disposal are not sufficient to confirm what the authors of the paper argue.
+
+Another important thing to assess is the eventual relationship between cancellations and customer type. This analysis aims to answer to the questions: how many people, among the ones who cancelled the reservation, belong to the different customer classes? Is there a class of customers where the rate of cancellation is higher than the other? The following marplot shows the total number of booking cancellations for customer type.
+
+
+```{r warning=FALSE}
+#1. Plot 1 by total bookings
+dfc.cancelation <- hotel_bookings_new %>%
+  mutate(
+    booking_cancelations = ifelse(is_canceled == 0, "Not Canceled", "Canceled")
+  )
+
+#2. Plotting
+dfc.cancelation %>%
+  group_by(booking_cancelations, customer_type) %>%
+  summarize(bookings_count = n()) %>%
+  ggplot(aes(x = reorder(customer_type, -bookings_count),y=bookings_count, fill = booking_cancelations)) + 
+  geom_bar(position = "dodge", stat = "identity")  +
+  labs(title = "Canceled vs Non Canceled Bookings by Customer Type", x = "Customer Type", y = "count") +
+  scale_fill_manual(values=c("#7fd8be", "#d87f99"))
+
+```
+
+
+The graph shows that, as we could expect, most of the customers are Transient, which means that they are not associated to a group or other customers, but they are on they own. Transient-Party, maybe families that travel together are quite frequent, while travelers by contract or organized groups are more less frequent, but they are intersting to analyze. Therefore, in order to better show up the difference between canceled and not canceled in each of these classes, we decided to do the following graphs:
+
+
+
+```{r}
+#1. Plot 1 by Transient customers
+dfc.cancelation %>%
+  filter(customer_type == "Transient") %>%
+  group_by(booking_cancelations) %>%
+  summarize(bookings_count = n()) %>%
+  mutate(Percent = round(bookings_count / sum(bookings_count), 3)) %>%
+  ggplot(aes(x = "", y = bookings_count, fill = booking_cancelations)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start=0) +
+  geom_text(aes(label = paste0(Percent*100, "%")), position = position_stack(vjust=.5), size = 7)  +
+  labs(title = "Transient") +
+  theme_minimal() +
+  scale_fill_manual(values=c("#7fd8be", "#d87f99"))
+
+```
+
+
+```{r}
+#2. Plot 2 by Transient Party customers
+dfc.cancelation %>%
+  filter(customer_type == "Transient-Party") %>%
+  group_by(booking_cancelations) %>%
+  summarize(bookings_count = n()) %>%
+  mutate(Percent = round(bookings_count / sum(bookings_count), 3)) %>%
+  ggplot(aes(x = "", y = bookings_count, fill = booking_cancelations)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start=0) +
+  geom_text(aes(label = paste0(Percent*100, "%")), position = position_stack(vjust=.5), size = 7)  +
+  labs(title = "Transient Party") +
+  theme_minimal() +
+  scale_fill_manual(values=c("#7fd8be", "#d87f99"))
+```
+
+
+```{r}
+
+#3. Plot 3 by Group customers
+dfc.cancelation %>%
+  filter(customer_type == "Group") %>%
+  group_by(booking_cancelations) %>%
+  summarize(bookings_count = n()) %>%
+  mutate(Percent = round(bookings_count / sum(bookings_count), 3)) %>%
+  ggplot(aes(x = "", y = bookings_count, fill = booking_cancelations)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start=0) +
+  geom_text(aes(label = paste0(Percent*100, "%")), position = position_stack(vjust=.5), size = 7)  +
+  labs(title = "Group") +
+  theme_minimal() +
+  scale_fill_manual(values=c("#7fd8be", "#d87f99"))
+```
+
+
+```{r}
+
+#4. Plot 4 by Contrcat customers
+dfc.cancelation %>%
+  filter(customer_type == "Contract") %>%
+  group_by(booking_cancelations) %>%
+  summarize(bookings_count = n()) %>%
+  mutate(Percent = round(bookings_count / sum(bookings_count), 3)) %>%
+  ggplot(aes(x = "", y = bookings_count, fill = booking_cancelations)) +
+  geom_bar(width = 1, stat = "identity") +
+  coord_polar("y", start=0) +
+  geom_text(aes(label = paste0(Percent*100, "%")), position = position_stack(vjust=.5), size = 7)  +
+  labs(title = "Contract") +
+  theme_minimal() +
+  scale_fill_manual(values=c("#7fd8be", "#d87f99"))
+```
+
+
+As we could expect the proportion of cancelations in groups is very low, since when people travel in group is unusual that the booking is canceled. We can think of organized travels to have an insight of this. Other cases are also not surprising and suggest that if people travel in group or with other people is less probable that they cancel the reservation, while if they are alone they can change their mind at the last minute. Since the number of groups or Travel-party is way lower than that of Travel class, it’s not possible for a hotel to focus its efforts only on the two classes above, even if form the point of view of cancellations they are more reliable.
+
+In conclusion we can show the favorite distribution channels among City Hotel and Resort. It turns out that both of them have TA/TO as main distribution channel. Also the behavior among other distribution channels seems to be the same, given the fact that we have less data for the Resort.
 
 
 ```{r warning=FALSE}
@@ -888,50 +1061,6 @@ ggplot(data = hotel_bookings_new, aes(distribution_channel,fill=is_canceled))+
 ```
 
 
-```{r warning=FALSE}
-# days in waiting list
-hotel_bookings_new%>%
-  filter(days_in_waiting_list>1)%>%
-  ggplot(aes(x=days_in_waiting_list,fill=is_canceled))+
-  geom_histogram(binwidth = 10) +
-  labs(title="Number of days in waiting list before confirmation")+
-   scale_fill_manual(values=c("#7fd8be", "#d87f99"),
-    name = "Booking Status",
-    breaks = c("0", "1"),
-    labels = c("Not Cancelled", "Cancelled")
-  ) + theme_bw()
-```
-
-```{r warning=FALSE}
-gg=hotel_bookings_new%>%
-  mutate("children_or_babies"=(ifelse((children>0 | babies>0), "Yes", "No")))%>%
-  mutate("baby"=(ifelse(babies>0, "Yes", "No")))%>%
-  mutate("child"=(ifelse(children>0, "Yes", "No")))
-
-ggplot(gg, aes(x = lead_time, fill = children_or_babies)) + 
-  geom_density(alpha = 0.4) + 
-  labs(title = "Lead Time by presence of children or babies",
-       x = "Lead Time",
-       y = "Count") +
-  xlim(0,500)+
-  theme_bw() + theme(legend.position = "top")
-
-ggplot(gg, aes(x = lead_time, fill = baby)) + 
-  geom_density(alpha = 0.4) + 
-  labs(title = "Lead Time by presence of babies",
-       x = "Lead Time",
-       y = "Count") +
-  xlim(0,500)+
-  theme_bw() + theme(legend.position = "top")
-
-ggplot(gg, aes(x = lead_time, fill = child)) + 
-  geom_density(alpha = 0.4) + 
-  labs(title = "Lead Time by presence of children",
-       x = "Lead Time",
-       y = "Count") +
-  xlim(0,500)+
-  theme_bw() + theme(legend.position = "top")
- ```
 
 # Measures of association between variables 
 
