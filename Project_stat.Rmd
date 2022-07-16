@@ -898,7 +898,7 @@ This can be easily seen also by the density plot, where on the x-axis there is t
 ggplot(hotel_bookings_new, aes(x = lead_time, fill = is_canceled)) + 
   geom_histogram(aes(y = ..density..), position = position_dodge(), binwidth = 20 ) +
   geom_density(alpha = 0.2) + 
-  labs(title = "Average Daily rate by Hotel",
+  labs(title = "Lead Time Density Plot",
        x = "Lead Time",
        y = "Count") + scale_fill_manual(values=c("#7fd8be", "#d87f99"),
     name = "Booking Status",
@@ -959,7 +959,7 @@ ggplot(data = dftemp1,
        aes(
          x = continent,
          fill = factor(continent)
-       )) + labs(title = "Number of bookings per Continent", 
+       )) + labs(title = "Number of canceled bookings per Continent", 
        x = "Continents", y = "count") +
   geom_bar(col ="black",fill="#7fd8be") + theme_bw()
 ```
@@ -971,7 +971,7 @@ From the plot we can see that the majority of guests with the above characterist
 ```{r}
 ggplot(dftemp2, aes(distribution_channel)) + 
   geom_bar(stat = "count", position = position_dodge(), col ="black",fill="#7fd8be") + 
-  labs(title = "Number of bookings for deposit type",
+  labs(title = "Number of canceled bookings for deposit type",
        x = "distribution_channel",
        y = "count") +
   theme_bw() 
