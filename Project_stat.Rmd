@@ -1007,9 +1007,11 @@ dfc.cancelation <- hotel_bookings_new %>%
 dfc.cancelation %>%
   group_by(booking_cancelations, customer_type) %>%
   summarize(bookings_count = n()) %>%
-  ggplot(aes(x = reorder(customer_type, -bookings_count),y=bookings_count, fill = booking_cancelations)) + 
+  ggplot(aes(x = reorder(customer_type, -bookings_count),y=bookings_count, 
+             fill = booking_cancelations)) + 
   geom_bar(position = "dodge", stat = "identity")  +
-  labs(title = "Canceled vs Non Canceled Bookings by Customer Type", x = "Customer Type", y = "count") +
+  labs(title = "Canceled vs Non Canceled Bookings by Customer Type", 
+       x = "Customer Type", y = "count") +
   scale_fill_manual(values=c("#7fd8be", "#d87f99"))
 
 ```
@@ -1029,7 +1031,8 @@ dfc.cancelation %>%
   ggplot(aes(x = "", y = bookings_count, fill = booking_cancelations)) +
   geom_bar(width = 1, stat = "identity") +
   coord_polar("y", start=0) +
-  geom_text(aes(label = paste0(Percent*100, "%")), position = position_stack(vjust=.5), size = 7)  +
+  geom_text(aes(label = paste0(Percent*100, "%")), position = position_stack(vjust=.5), 
+                size = 7)  +
   labs(title = "Transient") +
   theme_minimal() +
   scale_fill_manual(values=c("#7fd8be", "#d87f99"))
@@ -1047,7 +1050,8 @@ dfc.cancelation %>%
   ggplot(aes(x = "", y = bookings_count, fill = booking_cancelations)) +
   geom_bar(width = 1, stat = "identity") +
   coord_polar("y", start=0) +
-  geom_text(aes(label = paste0(Percent*100, "%")), position = position_stack(vjust=.5), size = 7)  +
+  geom_text(aes(label = paste0(Percent*100, "%")), position = position_stack(vjust=.5), 
+                size = 7)  +
   labs(title = "Transient Party") +
   theme_minimal() +
   scale_fill_manual(values=c("#7fd8be", "#d87f99"))
@@ -1065,7 +1069,8 @@ dfc.cancelation %>%
   ggplot(aes(x = "", y = bookings_count, fill = booking_cancelations)) +
   geom_bar(width = 1, stat = "identity") +
   coord_polar("y", start=0) +
-  geom_text(aes(label = paste0(Percent*100, "%")), position = position_stack(vjust=.5), size = 7)  +
+  geom_text(aes(label = paste0(Percent*100, "%")), position = position_stack(vjust=.5), 
+                size = 7)  +
   labs(title = "Group") +
   theme_minimal() +
   scale_fill_manual(values=c("#7fd8be", "#d87f99"))
@@ -1083,7 +1088,8 @@ dfc.cancelation %>%
   ggplot(aes(x = "", y = bookings_count, fill = booking_cancelations)) +
   geom_bar(width = 1, stat = "identity") +
   coord_polar("y", start=0) +
-  geom_text(aes(label = paste0(Percent*100, "%")), position = position_stack(vjust=.5), size = 7)  +
+  geom_text(aes(label = paste0(Percent*100, "%")), position = position_stack(vjust=.5), 
+                size = 7)  +
   labs(title = "Contract") +
   theme_minimal() +
   scale_fill_manual(values=c("#7fd8be", "#d87f99"))
@@ -1141,7 +1147,8 @@ We start from the couple *is_canceled*/*market_segment*:
 ```{r warning=FALSE}
 # Is_canceled - market segment
 
-canceled_market <-table(hotel_bookings_new$is_canceled, hotel_bookings_new$market_segment)
+canceled_market <-table(
+                  hotel_bookings_new$is_canceled, hotel_bookings_new$market_segment)
 canceled_market
 ```
 
@@ -1163,7 +1170,8 @@ A second case is that of *is_canceled*/*deposite_type*:
 ```{r warning=FALSE}
 # Is_canceled - deposite_type
 
-canceled_deposit <-table(hotel_bookings_new$is_canceled, hotel_bookings_new$deposit_type)
+canceled_deposit <-table(
+                   hotel_bookings_new$is_canceled, hotel_bookings_new$deposit_type)
 canceled_deposit
 ```
 
@@ -1185,7 +1193,8 @@ Furthermore a Chi-square test is conducted on the variable *arrival_date_month*,
 ```{r warning=FALSE}
 # Is_canceled - arrival_date_month
 
-canceled_month <-table(hotel_bookings_new$is_canceled, hotel_bookings_new$arrival_date_month)
+canceled_month <-table(
+                 hotel_bookings_new$is_canceled, hotel_bookings_new$arrival_date_month)
 canceled_month
 ```
 
@@ -1209,7 +1218,7 @@ In all these three cases considered above, the value is really close to zero, wh
 
 As already told, if we want to look at the association between two binary categorical variable we can use other measures, such as relative risk, Odds ratio and Yule's Q. We analyzed the following two couples of variables:
 
-1. *is_canceled* and *hotel*
+1. *is_canceled* and *hotel* : 
 
 ```{r}
 # Matrix is_canceled and hotel
@@ -1251,12 +1260,14 @@ Qh <- (odds_ratio_h-1) / (odds_ratio_h+1)
 Qh
 ```
 
-2. *is_canceled* and *is_repeated_guest*
+2. *is_canceled* and *is_repeated_guest* :
 
 ```{r}
 # Matrix is_canceled and is_repeated_guest
 
-canceled_guest_matrix <- as.matrix(table(hotel_bookings_new$is_canceled, hotel_bookings_new$is_repeated_guest))
+canceled_guest_matrix <- as.matrix(table(
+                         hotel_bookings_new$is_canceled,
+                         hotel_bookings_new$is_repeated_guest))
 rownames(canceled_guest_matrix) <- c("Not canceled", "Canceled")
 colnames(canceled_guest_matrix) <- c("No Repeated guest", "Repeated guest")
 canceled_guest_matrix
@@ -1296,7 +1307,7 @@ Qg
 ```
 
 
-## Models
+# Models
 
 Starting from the informations provided by the initial dataset, a first logistic regression model has been implemented, after removing variables with too many missing values (*agent* and *company*, as stated before). We already pointed out in the previous section that some other variables tend to be redundant; this is the case of *market_segment* and *reservation_status*: for this reason they are discarded from the further analysis.
 All the remaining variables are included in the initial model, which is called the *complete model*. At this point it’s important to emphasize that a variable has been added artificially to the dataset: it is *total_stays*, which is the sum of two variables in the dataset, *stays_in_weekend_nights* and *stays_in_week_nights* and it represents the total duration of the client’s stay.
@@ -1304,7 +1315,11 @@ All the remaining variables are included in the initial model, which is called t
 Since most of the variables we are dealing with are categorical, the function *lm* (i.e. linear model) provided by *r* had to be replaced with the more general *glm* (i.e. generalized linear model). As argument, the hyper-parameter *family* was set to “binomial”, because the response variable *is_canceled* is binary (values: 0,1).
 
 ```{r, warning=FALSE}
-complete_model<-glm(is_canceled~hotel+lead_time+reservation_status_date+arrival_date_month+total_stays+adults+children+babies+meal+distribution_channel+is_repeated_guest+adr+previous_cancellations+previous_bookings_not_canceled+booking_changes+deposit_type+days_in_waiting_list+customer_type+required_car_parking_spaces+total_of_special_requests,  family="binomial")
+complete_model<-glm(is_canceled~hotel+lead_time+reservation_status_date+arrival_date_month+
+total_stays+adults+children+babies+meal+distribution_channel+is_repeated_guest+adr+
+previous_cancellations+previous_bookings_not_canceled+booking_changes+deposit_type+
+days_in_waiting_list+customer_type+required_car_parking_spaces+total_of_special_requests,
+family="binomial")
 summary(complete_model)
 ```
 
@@ -1325,7 +1340,8 @@ And finally the ROC curve:
 ```{r}
 # ROC Curve
 
-roc.out_complete <- roc(hotel_bookings_new$is_canceled, logistic.prob_complete, levels=c(0, 1)) 
+roc.out_complete <- roc(hotel_bookings_new$is_canceled, logistic.prob_complete, 
+                        levels=c(0, 1)) 
 plot(roc.out_complete,  print.auc=TRUE, legacy.axes=TRUE, xlab="False positive rate", ylab="True positive rate", col="red") 
 ```
 
@@ -1363,14 +1379,19 @@ An important remark is that AIC rate generally favors models with less variables
 
 logistic.prob_AIC=predict(model_AIC, type="response")
 roc.out_AIC <- roc(hotel_bookings_new$is_canceled, logistic.prob_AIC, levels=c(0, 1)) 
-plot(roc.out_AIC,  print.auc=TRUE, legacy.axes=TRUE, xlab="False positive rate", ylab="True positive rate", col="red") 
+plot(roc.out_AIC,  print.auc=TRUE, legacy.axes=TRUE, xlab="False positive rate", 
+     ylab="True positive rate", col="red") 
   
 ```
 
 ### RIDGE
 
 ```{r}
-x <- model.matrix(is_canceled~lead_time+reservation_status_date+arrival_date_month+total_stays+adults+children+babies+meal+distribution_channel+is_repeated_guest+adr+previous_cancellations+previous_bookings_not_canceled+booking_changes+deposit_type+days_in_waiting_list+customer_type+required_car_parking_spaces+total_of_special_requests, hotel_bookings_new)[,-1]
+x <- model.matrix(is_canceled~lead_time+reservation_status_date+arrival_date_month+
+total_stays+adults+children+babies+meal+distribution_channel+is_repeated_guest+adr+
+previous_cancellations+previous_bookings_not_canceled+booking_changes+deposit_type+
+days_in_waiting_list+customer_type+required_car_parking_spaces+
+total_of_special_requests, hotel_bookings_new)[,-1]
 y <- hotel_bookings_new$is_canceled
 
 #Ridge plots
@@ -1453,7 +1474,8 @@ is_canc_test=hotel_data_test$is_canceled
 
 ```{r}
 #Logistic Regression
-glm.fits <- glm(is_canceled~lead_time+adr+total_of_special_requests,data=hotel_data_train,family=binomial)
+glm.fits <- glm(is_canceled~lead_time+adr+total_of_special_requests,
+                data=hotel_data_train,family=binomial)
 glm.probs <- predict(glm.fits,hotel_data_test,type="response")
 glm.pred <- rep(0,29847)
 glm.pred[glm.probs>.5] <- 1
@@ -1465,7 +1487,9 @@ cat("Mean error is:", mean(glm.pred!=is_canc_test))
 
 ```{r}
 #Polinomial Regression
-glm.fits <- glm(is_canceled~lead_time+adr+total_of_special_requests+I(adr^3)+I(lead_time^2)+I(total_of_special_requests^2),data=hotel_data_train,family=binomial)
+glm.fits <- glm(is_canceled~lead_time+adr+total_of_special_requests+I(adr^3)+
+                I(lead_time^2)+I(total_of_special_requests^2),
+                data=hotel_data_train,family=binomial)
 glm.probs <- predict(glm.fits,hotel_data_test,type="response")
 glm.pred <- rep(0,29847)
 glm.pred[glm.probs>.5] <- 1
