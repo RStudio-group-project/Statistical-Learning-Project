@@ -1520,3 +1520,13 @@ qda.class <- qda.pred$class
 confusionMatrix(as.factor(qda.class),is_canc_test)
 cat("Mean error is:", mean(glm.pred!=is_canc_test))
 ```
+
+# Conclusion
+
+The main purpose of this work was to find, given the booking dataset, if it were possible to predict the event of booking cancellation through statistical models. However, working on a dataset where most of variables are categorical turned out to be far more complex than we expected for models like Logistic Regression, Ridge, Lasso and the others. Values like adjusted *R^2* that are typically used to assess the quality of a model cannot be used in such a case. We then made use of the AIC value during the analysis.
+
+Better results would have been achieved by using more complex models. For example a Decision Tree seems to be a good choice when you deal with a lot of categorical variables.
+
+Despite all these limits our final model achieves good results on the test set and we can conclude that Logistic Regression, Ridge and Lasso are good models. In particular, with an accuracy of 0.8033, Logistic Regression is the best implemented model. According to accuracy scores, Lasso and Ridge show a slightly lower performance, respectively of 0.7577 and 0.7719. A larger difference in scores can be seen in Specificity and Sensitivity, where Logistic Regression scores are quite different from Ridge and Lasso scores (lower in Specificity, higher in Sensitivity).
+
+A final remark is that the dataset lended itself very well to exploratory analysis and all the relevant informations we have been able to extract from it can be of great help for a hotel in order to plan the future work.
