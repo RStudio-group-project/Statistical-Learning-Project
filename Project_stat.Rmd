@@ -673,7 +673,8 @@ fig_months <- fig_months %>% add_lines(data=df_months_City,
                              name = 'City Hotel', type = 'scatter', mode = 'lines', 
                              line = list(color = 'rgb((239,115,101))', width = 4))
 
-fig_months <- fig_months %>% add_lines(data=df_months_Resort, x = ~arrival_date_month_Resort, 
+fig_months <- fig_months %>% add_lines(data=df_months_Resort, 
+                             x = ~arrival_date_month_Resort, 
                              y = ~frequency_Resort, name = 'Resort Hotel', 
                              type = 'scatter', mode = 'lines', 
                              line = list(color = 'rgb((251,210,108))', width = 4)) 
@@ -853,11 +854,13 @@ df_canc <- as.data.frame(lapply(df_canc, function(x) as.data.frame(table(x))))
 colnames(df_canc) <- c("is_canceled", "frequency")
 df_canc
 colors_donut_canc <- c('rgb(127,216,190)','rgb(216,127,153)') 
-fig_canc <- df_canc %>% plot_ly(labels = c('not canceled','canceled' ), values = ~frequency, 
+fig_canc <- df_canc %>% plot_ly(labels = c('not canceled','canceled' ), 
+                                  values = ~frequency, 
                                   marker = list(colors = colors_donut_canc,
                                   line = list(color = '#FFFFFF', width = 1)))
 fig_canc <- fig_canc %>% add_pie(hole = 0.6)
-fig_canc <- fig_canc %>% layout(title = "Total number of canceled and not canceled bookings",  
+fig_canc <- fig_canc %>% layout(
+                      title = "Total number of canceled and not canceled bookings",  
                       showlegend = T,
                       xaxis = list(showgrid = FALSE, zeroline = FALSE,
                                    showticklabels = FALSE),
@@ -956,7 +959,8 @@ ggplot(data = dftemp1,
        aes(
          x = continent,
          fill = factor(continent)
-       )) + labs(title = "Number of bookings per Continent", x = "Continents", y = "count") +
+       )) + labs(title = "Number of bookings per Continent", 
+       x = "Continents", y = "count") +
   geom_bar(col ="black",fill="#7fd8be") + theme_bw()
 ```
 
@@ -1125,7 +1129,11 @@ Usually, when we want to understand the relationship between two variables we im
 ```{r}
 # Correlation matrix
 
-hotel_numerical <- as.data.frame(hotel_bookings_new[,c("lead_time", "stays_in_weekend_nights", "stays_in_week_nights", "adults", "children", "babies", "days_in_waiting_list", "adr", "previous_cancellations", "previous_bookings_not_canceled", "booking_changes", "required_car_parking_spaces", "total_of_special_requests")]) 
+hotel_numerical <- as.data.frame(hotel_bookings_new[,c("lead_time", 
+"stays_in_weekend_nights", "stays_in_week_nights", "adults", "children",
+"babies", "days_in_waiting_list", "adr", "previous_cancellations",
+"previous_bookings_not_canceled", "booking_changes", 
+"required_car_parking_spaces", "total_of_special_requests")]) 
 
 cor_mat <- cor(hotel_numerical)
 
@@ -1213,7 +1221,8 @@ As already told, if we want to look at the association between two binary catego
 ```{r}
 # Matrix is_canceled and hotel
 
-canceled_hotel_matrix <- as.matrix(table(hotel_bookings_new$is_canceled, hotel_bookings_new$hotel))
+canceled_hotel_matrix <- as.matrix(table(hotel_bookings_new$is_canceled,
+hotel_bookings_new$hotel))
 canceled_hotel_matrix
 ```
 
@@ -1334,7 +1343,8 @@ And finally the ROC curve:
 
 roc.out_complete <- roc(hotel_bookings_new$is_canceled, logistic.prob_complete, 
                         levels=c(0, 1)) 
-plot(roc.out_complete,  print.auc=TRUE, legacy.axes=TRUE, xlab="False positive rate", ylab="True positive rate", col="red") 
+plot(roc.out_complete,  print.auc=TRUE, legacy.axes=TRUE, xlab="False positive rate",
+ylab="True positive rate", col="red") 
 ```
 
 
