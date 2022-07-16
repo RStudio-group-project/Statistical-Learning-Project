@@ -1026,6 +1026,97 @@ cramersv(cs_month)
 In all these three cases considered above, the value is really close to zero, which means that our variables are very unlikely to be completely un-associated in some population. However, this does not mean the variables are strongly associated; a weak association in a large sample size may also result in a p-value close to zero. Furthermore, we know that when Cramer's V is 0, it indicates no association between the two variables, while Cramer's V equal to 1 means a strong association; in the intermediate cases it is difficult to interpret, because the value also depends on the size of table and many other things. For these reasons, since in the particular case of 2x2 tables there exist other association measures, we considered them.
 
 
+## Association between binary categorical variables - Relative risk, Odds ratio and Yule's Q
+
+As already told, if we want to look at the association between two binary categorical variable we can use other measures, such as relative risk, Odds ratio and Yule's Q. We analyzed the following two couples of variables:
+
+1. *is_canceled* and *hotel*
+
+```{r}
+# Matrix is_canceled and hotel
+
+canceled_hotel_matrix <- as.matrix(table(hotel_bookings_new$is_canceled, hotel_bookings_new$hotel))
+canceled_hotel_matrix
+```
+
+```{r}
+# Not canceled (is_canceled == 0)
+
+n1h <- 46228+28938
+pnch.hat <- 46228/n1h
+
+
+# Canceled (is_canceled == 1)
+
+n2h <- 33102+11122
+pch.hat <- 33102/n2h
+```
+
+```{r}
+# Relative risk
+
+pnch.hat / pch.hat
+```
+
+```{r}
+# Odds ratio
+
+odds_ratio_h <- (46228 * 11122) / (28938*33102)
+odds_ratio_h
+```
+
+```{r}
+# Yule's Q
+
+Qh <- (odds_ratio_h-1) / (odds_ratio_h+1)
+Qh
+```
+
+2. *is_canceled* and *is_repeated_guest*
+
+```{r}
+# Matrix is_canceled and is_repeated_guest
+
+canceled_guest_matrix <- as.matrix(table(hotel_bookings_new$is_canceled, hotel_bookings_new$is_repeated_guest))
+rownames(canceled_guest_matrix) <- c("Not canceled", "Canceled")
+colnames(canceled_guest_matrix) <- c("No Repeated guest", "Repeated guest")
+canceled_guest_matrix
+```
+
+```{r}
+# Not canceled (is_canceled == 0)
+
+n1g <- 71908+3258
+pncg.hat <- 71908/n1g
+
+
+# Canceled (is_canceled == 1)
+
+n2g <- 43672+552
+pcg.hat <- 43672/n2g
+```
+
+```{r}
+# Relative risk
+
+pncg.hat / pcg.hat
+```
+
+```{r}
+# Odds ratio
+
+odds_ratio_g <- (71908 * 552) / (3258*43672)
+odds_ratio_g
+```
+
+```{r}
+# Yule's Q
+
+Qg <- (odds_ratio_g-1) / (odds_ratio_g+1)
+Qg
+```
+
+
 ## Models
 
 Starting from the informations provided by the initial dataset, a first logistic regression model has been implemented, after removing variables with too many missing values (*agent* and *company*, as stated before). We already pointed out in the previous section that some other variables tend to be redundant; this is the case of *market_segment* and *reservation_status*: for this reason they are discarded from the further analysis.
