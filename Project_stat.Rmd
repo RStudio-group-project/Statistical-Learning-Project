@@ -933,77 +933,97 @@ ggplot(gg, aes(x = lead_time, fill = child)) +
   theme_bw() + theme(legend.position = "top")
  ```
 
-## Chi-square
+# Measures of association between variables 
 
-The remainder of this analysis  will be focused on *is_canceled*, which is a binary variable (with values: 0,1). The aim is to find from the observations if a booking will be canceled or not. To achieve this purpose we need to take into account that the most of the variables are categorical variables. It’s very common to start this kind of analysis by verifying the correlation between variables, so to understand what is their relationship. The presence of a so great amount of categorical variables in the case under examination encouraged us to use a Chi-squared test to see the relationship between the response variable *is_canceled* and other variables.
-Most of these informations come directly from the Exploratory Data Analysis, where we have assessed what is the relationship between *is_canceled* and some specific variables that will be of interest in the continuation of the analysis. For example, the variable *distribution_channel* has been shown to be strictly related to *market_segment* (nope, non lo mostriamo, lo notiamo direttamente dal dataset), since they have almost the same levels. Regarding the variable *deposite_type*, we saw that the impact on the cancellation was very high, also in a counterintuitive way (in the already discussed non refundable case). We want now to verify all these intuitions given by the previous exploratory analysis with the Chi-squared test.
+Most of the variables in our dataset are categorical. Therefore, we decided to differentiate the association analysis between numerical variables and between categorical variables. 
+
+## Association between numerical variables - Correlation
+
+Usually, when we want to understand the relationship between two variables we immediately think of correlation. We know, however, that this is used to refer only to a linear relationship between two variables, and so we have to consider only numerical variables. Therefore, we made the following correlation matrix with all the numerical variables. 
+
+```{r}
+# Correlation matrix
+
+hotel_numerical <- as.data.frame(hotel_bookings_new[,c("lead_time", "stays_in_weekend_nights", "stays_in_week_nights", "adults", "children", "babies", "days_in_waiting_list", "adr", "previous_cancellations", "previous_bookings_not_canceled", "booking_changes", "required_car_parking_spaces", "total_of_special_requests")]) 
+
+cor_mat <- cor(hotel_numerical)
+
+corrplot(cor_mat)
+```
+As we can see from the corrplot, the numerical variables are not correlated.
+
+
+## Association between categorical variables - Chi-square
+
+Since there is not really a best way to describe the association between two different categorical variables, we decided to focus on associations between the variable *is_canceled* and the other categorical variables. In general, the most used method in this case is the Chi-square, and in particular the Cramer's V, which is a normalized version of the Chi-square statistics.
+
 We start from the couple *is_canceled*/*market_segment*:
 
 ```{r warning=FALSE}
+# Is_canceled - market segment
 
-attach(hotel_bookings_new)
-ct_ms <-table(is_canceled, market_segment)
-kable(ct_ms)
+canceled_market <-table(hotel_bookings_new$is_canceled, hotel_bookings_new$market_segment)
+canceled_market
 ```
 
 ```{r warning=FALSE}
-test_ms <-chisq.test(ct_ms)
-corrplot(test_ms$residuals, is.cor = FALSE)
+# Chi-square is_canceled - market segment
+
+cs_market <-chisq.test(canceled_market, correct = FALSE)
+cs_market
 ```
 
+```{r}
+# Cramer's V is_canceled - market segment
+
+cramersv(cs_market)
+```
 
 A second case is that of *is_canceled*/*deposite_type*:
 
 ```{r warning=FALSE}
+# Is_canceled - deposite_type
 
-attach(hotel_bookings_new)
-ct_dt <-table(is_canceled, deposit_type)
-kable(ct_dt)
+canceled_deposit <-table(hotel_bookings_new$is_canceled, hotel_bookings_new$deposit_type)
+canceled_deposit
 ```
 
 ```{r warning=FALSE}
-test_dt <-chisq.test(ct_dt)
-corrplot(test_dt$residuals, is.cor = FALSE)
+# Chi-square is_canceled - market segment
+
+cs_deposit <-chisq.test(canceled_deposit, correct = FALSE)
+cs_deposit
 ```
 
+```{r}
+# Cramer's V is_canceled - market segment
 
-The analysis seems to be a confirmation of what we have understood from the exploratory analysis.
+cramersv(cs_deposit)
+```
 
-Another thing to be noticed is that *reservation_status* is clearly a redundant variable, since it is exactly the same as *is_canceled*.
 Furthermore a Chi-square test is conducted on the variable *arrival_date_month*, because it is a multilevel categorical variable that shows a large number of levels (12) with respect to the others. It is he only time variable we will use in the definition of the predictive model (since it is in our view the most relevant one according to the aim of this project, while informations about days of arrival are too specific and that about year of arrival too generic). For these reasons particular attention has been paid to it.
 
 ```{r warning=FALSE}
+# Is_canceled - arrival_date_month
 
-hotel_bookings_new <-
-  hotel_bookings_new %>% 
-  mutate(arrival_date_month = factor(
-    arrival_date_month,
-    levels = c(
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December"
-    ),
-    ordered = TRUE
-  ))
-attach(hotel_bookings_new)
-
-ct<-table(is_canceled, arrival_date_month)
-kable(ct)
+canceled_month <-table(hotel_bookings_new$is_canceled, hotel_bookings_new$arrival_date_month)
+canceled_month
 ```
 
 ```{r warning=FALSE}
-test <-chisq.test(ct)
-corrplot(test$residuals, is.cor = FALSE)
+# Chi-square is_canceled - arrival_date_month
+
+cs_month <-chisq.test(canceled_month, correct = FALSE)
+cs_month
 ```
+
+```{r}
+# Cramer's V is_canceled - arrival_date_month
+
+cramersv(cs_month)
+```
+
+In all these three cases considered above, the value is really close to zero, which means that our variables are very unlikely to be completely un-associated in some population. However, this does not mean the variables are strongly associated; a weak association in a large sample size may also result in a p-value close to zero. Furthermore, we know that when Cramer's V is 0, it indicates no association between the two variables, while Cramer's V equal to 1 means a strong association; in the intermediate cases it is difficult to interpret, because the value also depends on the size of table and many other things. For these reasons, since in the particular case of 2x2 tables there exist other association measures, we considered them.
 
 
 ## Models
