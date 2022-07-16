@@ -143,8 +143,6 @@ df_hotel <- as.data.frame(lapply(df_hotel, function(x) as.data.frame(table(x))))
 
 colnames(df_hotel) <- c("hotel", "frequency")
 
-df_hotel
-
 colors_donut <- c('rgb((119,51,68))','rgb((227,181,164))') 
 
 fig_hotel <- df_hotel %>% plot_ly(labels = ~hotel, values = ~frequency, 
@@ -155,7 +153,6 @@ fig_hotel <- fig_hotel %>% layout(title = "Total number of booking for each hote
                       showlegend = T,
                       xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
                       yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
-
 fig_hotel
 
 ```
