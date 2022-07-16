@@ -1315,7 +1315,7 @@ We can compute the confusion matrix:
 logistic.prob_complete <- predict(complete_model, type="response")
 logistic.pred_complete <- rep(0, length(logistic.prob_complete))
 logistic.pred_complete[logistic.prob_complete > 0.5] <- 1
-table(logistic.pred_complete, hotel_bookings_new$is_canceled)
+confusionMatrix(as.factor(logistic.pred_complete), hotel_bookings_new$is_canceled)
 ```
 
 
@@ -1351,7 +1351,7 @@ For an assessment of the models the AUC parameter has been chosen. This is an ac
 logistic.prob_AIC=predict(model_AIC, type="response")
 logistic.pred_AIC <- rep(0, length(logistic.prob_AIC))
 logistic.pred_AIC[logistic.prob_complete > 0.5] <- 1
-table(logistic.pred_AIC, hotel_bookings_new$is_canceled)
+confusionMatrix(as.factor(logistic.pred_AIC), hotel_bookings_new$is_canceled)
 ```
 
 
